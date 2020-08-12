@@ -227,7 +227,7 @@ public:
                                                                             // create window without title
         auto txtSize = ImGui::CalcTextSize(txt.c_str());                    // center text
         ImGui::SetCursorPosX((imSize.x-txtSize.x)/2);
-        ImGui::TextWrapped(txt.c_str());
+        ImGui::TextWrapped("%s", txt.c_str());
         ImGui::End();
     }
 private:
