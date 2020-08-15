@@ -19,10 +19,12 @@
 #include "Shader.hpp"
 #include "RenderStats.hpp"
 
+
 namespace sre {
     // forward declaration
     class Shader;
     class Inspector;
+	class RenderPass;
 
     /**
      * Represents a Mesh object.
@@ -50,6 +52,13 @@ namespace sre {
             MeshBuilder& withQuad(float size=1);                                                // Creates a quad x,y = [-size;size] and z=0, UV=[0;1], normals=(0,0,1)
             MeshBuilder& withTorus(int segmentsC = 24, int segmentsA = 24, float radiusC = 1, float radiusA = .25);
                                                                                                 // Creates a torus in xy plane. C is in the outer (large) circle, A is the sweeping circle.
+            
+			// properties
+			MeshBuilder& withLocation(glm::vec3 locationIn);									// Stores a world space location for RenderPass draw
+			MeshBuilder& withScale(glm::vec3 directionalScaleIn);         						// Stores a world space x, y, z scale for RenderPass draw
+			MeshBuilder& withScale(float scaleIn);         										// Stores a world space scale for RenderPass draw
+			MeshBuilder& withMaterial(std::shared_ptr<Material> materialIn);               		// Stores a material for RenderPass draw 
+
             // raw data
             MeshBuilder& withPositions(const std::vector<glm::vec3> &vertexPositions);          // Set vertex attribute "position" of type vec3
             MeshBuilder& withNormals(const std::vector<glm::vec3> &normals);                    // Set vertex attribute "normal" of type vec3
@@ -73,7 +82,7 @@ namespace sre {
             MeshBuilder& withName(const std::string& name);                                       // Defines the name of the mesh
             MeshBuilder& withRecomputeNormals(bool enabled);                                      // Recomputes normals using angle weighted normals
             MeshBuilder& withRecomputeTangents(bool enabled);                                     // Recomputes tangents using (Lengyel’s Method)
-
+			
             std::shared_ptr<Mesh> build();
         private:
             std::vector<glm::vec3> computeNormals();
@@ -91,8 +100,12 @@ namespace sre {
             bool recomputeNormals = false;
             bool recomputeTangents = false;
             std::string name;
+			glm::vec3 location {0.0f, 0.0f, 0.0f};
+			glm::vec3 scale {1.0f, 1.0f, 1.0f};
+			std::shared_ptr<Material> material {nullptr};
             friend class Mesh;
         };
+
         ~Mesh();
 
         static MeshBuilder create();                                // Create Mesh using the builder pattern. (Must end with build()).
@@ -125,6 +138,13 @@ namespace sre {
         const std::string& getName();                               // Return the mesh name
 
         int getDataSize();                                          // get size of the mesh in bytes on GPU
+
+		glm::vec3 Location();										// Get the location (the center of the bounding box) of the mesh
+		void setLocation(glm::vec3 newLocation);					// Set the location (the center of the bounding box) of the mesh
+		void setScale(glm::vec3 newDirectionalScale);				// Scale the mesh with different amounts in x, y, and z directions
+		void setScale(float newScale);								// Scale the mesh in the same amount in all directions
+		void setMaterial(std::shared_ptr<Material> newMaterial);	// Set the material for the mesh
+		void draw(RenderPass& renderPass);							// Draw the mesh using renderPass
     private:
         struct Attribute {
             int offset;
@@ -140,8 +160,9 @@ namespace sre {
             uint32_t type;
         };
 
-        Mesh       (std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats);
+        Mesh       (std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 scaleIn, std::shared_ptr<Material> materialIn);
         void update(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats);
+// location, scale, and material need to be added to update function!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         void updateIndexBuffers();
         std::vector<float> getInterleavedData();
@@ -181,6 +202,10 @@ namespace sre {
         friend class Inspector;
 
         bool hasAttribute(std::string name);
+
+		glm::vec3 location {0.0f, 0.0f, 0.0f};
+		glm::vec3 scale {1.0f, 1.0f, 1.0f};
+		std::shared_ptr<Material> material {nullptr};
     };
 
     template<>

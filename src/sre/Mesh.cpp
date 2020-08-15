@@ -13,18 +13,22 @@
 #include <iostream>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/transform.hpp>
 #include <iomanip>
 #include <sstream>
 #include "sre/Renderer.hpp"
+#include "sre/RenderPass.hpp"
 #include "sre/Shader.hpp"
 #include "sre/Log.hpp"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
+class Material;
+
 namespace sre {
     uint16_t Mesh::meshIdCount = 0;
 
-    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat,std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string,std::vector<glm::vec3>>&& attributesVec3,std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::ivec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology, std::string name,RenderStats& renderStats)
+    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 scaleIn, std::shared_ptr<Material> materialIn) : location(locationIn), scale(scaleIn), material(materialIn)
     {
         meshId = meshIdCount++;
         if ( Renderer::instance == nullptr){
@@ -331,6 +335,31 @@ namespace sre {
         return dataSize;
     }
 
+	void Mesh::setLocation(glm::vec3 newLocation) {
+		location = newLocation;
+	}
+
+	glm::vec3 Mesh::Location() {
+		return location;
+	}
+
+	void Mesh::setScale(glm::vec3 newDirectionalScale) {
+		scale = newDirectionalScale;
+	}
+
+	void Mesh::setScale(float newScale) {
+		scale = glm::vec3(newScale, newScale, newScale);
+	}
+
+	void Mesh::setMaterial(std::shared_ptr<Material> newMaterial)	{
+		material = newMaterial;
+	}
+
+	void Mesh::draw(RenderPass& rp) {
+		std::shared_ptr<Mesh> thisMesh = shared_from_this();	
+		rp.draw(thisMesh, glm::translate(location)*glm::scale(scale), material);
+	}
+
     std::array<glm::vec3,2> Mesh::getBoundsMinMax() {
         return boundsMinMax;
     }
@@ -464,6 +493,26 @@ namespace sre {
     bool Mesh::hasAttribute(std::string name) {
         return attributeByName.find(name) != attributeByName.end();
     }
+
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withLocation(glm::vec3 locationIn) {
+		location = locationIn;
+		return *this;
+	}
+
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withScale(glm::vec3 directionalScaleIn) {
+		scale = directionalScaleIn;
+		return *this;
+	}
+
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withScale(float scaleIn) {
+		scale = glm::vec3(scaleIn, scaleIn, scaleIn);
+		return *this;
+	}
+
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withMaterial(std::shared_ptr<Material> materialIn) {
+		material = materialIn;
+		return *this;
+	}
 
     Mesh::MeshBuilder &Mesh::MeshBuilder::withPositions(const std::vector<glm::vec3> &vertexPositions) {
         withAttribute("position", vertexPositions);
@@ -694,7 +743,7 @@ namespace sre {
             return updateMesh->shared_from_this();
         }
 
-        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology,name,renderStats);
+        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology,name,renderStats, location, scale, material);
         renderStats.meshCount++;
 
         return std::shared_ptr<Mesh>(res);
@@ -1101,4 +1150,5 @@ namespace sre {
         recomputeTangents = enabled;
         return *this;
     }
+
 }

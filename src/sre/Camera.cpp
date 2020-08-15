@@ -161,4 +161,127 @@ namespace sre {
         return {originClipSpaceWS3, glm::normalize(destClipSpaceWS3-originClipSpaceWS3)};
 
     }
+
+// FPS_Camera Class Method Implementations
+
+FPS_Camera::FPS_Camera(): Camera() {
+	position = {0.0, 0.0, 0.0};
+	direction = {0.0, 0.0, -1.0};
+	worldUp = {0.0, 1.0, 0.0};
+	up = worldUp;
+	right = glm::cross(direction, up);
+	forward = direction - glm::dot(direction, worldUp) * worldUp;
+	forwardLen = glm::length(forward);
+	fieldOfView = 45.0;
+	speed = 1.0;
+	float nearPlane = 0.1f;
+	float farPlane = 150.0f;
+    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+    lookAt(position, position + direction, up);
+}	
+	
+void
+FPS_Camera::init(glm::vec3 positionIn, glm::vec3 directionIn,
+				 glm::vec3 worldUpIn, float speedIn, float fieldOfViewIn,
+				 float nearPlane, float farPlane) {
+	position = positionIn;
+	direction = directionIn;
+	worldUp = worldUpIn;
+	up = worldUp;
+	right = glm::cross(direction, up);
+	forward = direction - glm::dot(direction, worldUp) * worldUp;
+	forwardLen = glm::length(forward);
+	fieldOfView = fieldOfViewIn;
+	speed = speedIn;
+    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+    lookAt(position, position + direction, up);
+}
+
+float
+FPS_Camera::Speed() {
+	return speed;
+}
+
+void
+FPS_Camera::setSpeed(float speedIn) {
+	speed = speedIn;
+}
+
+void
+FPS_Camera::move(Direction directionToMove, float distance) {
+	glm::vec3 moveDirection;
+	switch(directionToMove) {
+		case Direction::Forward:
+			moveDirection = forward;	
+			break;
+		case Direction::Backward:
+			moveDirection = -forward;	
+			break;
+		case Direction::Left:
+			moveDirection = -right;	
+			break;
+		case Direction::Right:
+			moveDirection = right;	
+			break;
+		case Direction::Up:
+			moveDirection = up;	
+			break;
+		case Direction::Down:
+			moveDirection = -up;	
+			break;
+	}
+
+	// Add the movement vector to the camera position
+	position += distance * moveDirection;
+	// Set the camera view transform
+	lookAt(position, position + direction, up);
+}
+
+void
+FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
+    // Note that pitch and yaw are expected to be in degrees
+    float pitch = glm::radians(pitchIncrement);
+	// Scale the amount of yaw by the un-normalized length of the forward vector
+    float yaw = forwardLen * glm::radians(yawIncrement);
+
+    // Rotate direction & up according to pitch around right
+    direction = glm::normalize(direction + glm::tan(pitch)*up);
+    up = glm::cross(right, direction);
+
+	// Check if the angle theta between forward and up > thetaMax
+	float cosThetaMax = glm::cos(glm::radians(89.9));
+	auto cosTheta = glm::dot(forward, direction);
+	if (cosTheta < cosThetaMax) { // cos(theta) gets smaller as theta > 90
+		direction = direction + (cosThetaMax - cosTheta) * forward;
+		direction = glm::normalize(direction);
+		up = glm::cross(right, direction);
+	}
+
+    // Rotate direction & right according to yaw around up vector
+    direction = glm::normalize(direction + glm::tan(yaw)*right);
+	// Use worldUp to ensure that right vector stays on horizontal plane
+    right = glm::cross(direction, worldUp);
+	// Normalize because cross product was not with ortho-normal vectors
+	right = glm::normalize(glm::cross(direction, worldUp));
+
+	// Adjust up vector to be consistent with right and direction
+	up = glm::cross(right, direction);
+
+	// Calculate projection and length of direction onto horizontal plane 
+	forward = direction - glm::dot(direction, worldUp) * worldUp;
+	forwardLen = glm::length(forward);
+	forward = glm::normalize(forward);
+
+    // Calculate the view transform
+    lookAt(position, position + direction, up);
+}
+
+void
+FPS_Camera::zoom(float zoomIncrement) {
+	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
+	fieldOfView = glm::min(fieldOfView,45.0f); // USE CLASS MAX FOV!!!!!
+	fieldOfView = glm::max(fieldOfView,1.0f);
+	setPerspectiveProjection(fieldOfView,0.1,150); // USE CLASS NEAR & FAR!!!!
+}
+
 }
