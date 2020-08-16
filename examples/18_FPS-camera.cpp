@@ -67,21 +67,17 @@ private:
     std::vector<std::vector<glm::vec3>> m_xLines;
 };
 
-// Global variables for sphere
+// Global variables ============================================================
+
+float worldUnit = 1.0; // Used as a unit of measure to scale all objects
+float elapsedTime = 0.0f;
 std::shared_ptr<Mesh> sphere;
-float elapsedTime = 0.0f; // Elapsed time to calculate z position of sphere
-float sphereRadius = 1.0;
+std::shared_ptr<Mesh> Suzanne; // Monkey object
+Cube cube {{0.0, 0.0, 0.0}, 5.0f * worldUnit};
 
-// Global variable for the monkey object "Suzanne"
-std::shared_ptr<Mesh> Suzanne;
-
-// Global variable for cube
-float cubeSideLength = 5.0f;
-Cube cube {{0.0, 0.0, 0.0}, float SideLength = 5.0*sphereRadius};
-
-// Global variables for grids (note: grid should come first, others use info)
-float gridSpace = cubeSideLength;
-float gridLength = 30 * gridSpace;
+// Grids (note: grid should come first, others use info)
+float gridSpace = 5.0f * worldUnit;
+float gridLength = 150.0f * worldUnit;
 Color black {0.0f, 0.0f, 0.0f, 1.0f};
 Color white {1.0f, 1.0f, 1.0f, 1.0f};
 GridPlane gridPlaneTop {{0.0, 4.0 * gridSpace, 0.0},
@@ -89,22 +85,93 @@ GridPlane gridPlaneTop {{0.0, 4.0 * gridSpace, 0.0},
 GridPlane gridPlaneBottom {{0.0, -4.0 * gridSpace, 0.0},
 							gridLength, gridSpace, white};
 
-
-// Global variable for camera
 FPS_Camera camera;
-
-// Global variables for lights
 WorldLights worldLights;
-
-// Global variable for skybox (blue sky with horizon)
 std::shared_ptr<Skybox> skybox;
 
-// Global variables to store mouse callback state
+// Mouse callback state
 bool mouseDown = false;
 int lastMouse_x = 0;
 int lastMouse_y = 0;
 
-// Callback function to update the rendering frame (move the sphere)
+// Definition of callback functions
+void frameUpdate(float deltaTime);
+void frameRender();
+void keyEvent(SDL_Event& event);
+void mouseEvent(SDL_Event& event);
+
+// Main function ===============================================================
+
+int main() {
+
+	// Define and initialize Graphics renderer (needs to be done first)
+    SDLRenderer renderer;
+    renderer.init();
+	// Assign SDLRenderer 'callback' functions to functions implemented below
+    renderer.frameUpdate = frameUpdate;
+    renderer.frameRender = frameRender;
+    renderer.mouseEvent = mouseEvent;
+    renderer.keyEvent = keyEvent;
+
+	// Create camera
+	glm::vec3 position {0.0, 0.0, 65.0f * worldUnit};
+	glm::vec3 direction {0.0, 0.0, -1.0};
+	glm::vec3 worldUp {0.0, 1.0, 0.0};
+	float speed = 2.0f * worldUnit; // 2 worldUnits / second
+	float fieldOfView= 45.0;
+	camera.init(position, direction, worldUp, speed, fieldOfView);
+//	camera.init({0.0, 0.0,  10.0f * worldUnit}, // position
+//				{0.0, 0.0, -1.0}, // direction
+//				{0.0, 1.0,  0.0}, // worldUp
+//				2.0f * worldUnit, 45.0) { // speed, fieldOfView
+
+	// Create lighting
+    worldLights.setAmbientLight({0.05,0.05,0.05});
+	Light sun = Light::create()
+				.withDirectionalLight({1, 1,1})
+				.withColor({1,1,1})
+				.build();
+    worldLights.addLight(sun);
+
+	// Create the sky (with a horizon, called the 'Skybox')
+    skybox = Skybox::create();
+
+	// Create sphere
+	std::shared_ptr<Material> sphereMaterial;
+    sphereMaterial = Shader::getStandardPBR()->createMaterial();
+    sphereMaterial->setColor({0.0f, 1.0f, 0.0f, 1.0f});
+    sphereMaterial->setMetallicRoughness({0.5f, 0.5f});
+    sphere = Mesh::create()
+					.withSphere()
+					.withLocation({0.0, 0.0, 0.0})
+					.withScale(worldUnit)
+					.withMaterial(sphereMaterial)
+					.build();
+
+	// Create the monkey object "Suzanne"
+	std::shared_ptr<Material> SuzanneMaterial;
+    SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
+    SuzanneMaterial->setColor({1.0f, 0.7f, 0.2f, 1.0f});
+    SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
+	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
+	Suzanne->setLocation({20.0f * worldUnit, 0.0, 0.0});
+	Suzanne->setScale(worldUnit);
+	Suzanne->setMaterial(SuzanneMaterial);
+
+	// Capture the mouse (mouse won't be visible)
+	//SDL_SetRelativeMouseMode(SDL_TRUE);
+	//SDL_CaptureMouse(SDL_TRUE);
+
+	// Start processing mouse and keyboard events (continue until user quits)
+    renderer.startEventLoop();
+
+	// Exit the program
+    return 0;
+}
+
+// Callback functions ==========================================================
+
+// Update the rendering frame (move the sphere)
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->Location();	
@@ -112,7 +179,7 @@ void frameUpdate(float deltaTime) {
 	sphere->setLocation(sphereLocation);
 };
 
-// Callback function to render (draw) the updated frame
+// Render (draw) the updated frame
 void frameRender() {
 	// Create render pass, initialize with world variables
 	auto renderPass = RenderPass::create()
@@ -121,18 +188,15 @@ void frameRender() {
    	     .withSkybox(skybox)
    	     .withName("Frame")
    	     .build();
-	// Draw sphere
+	// Draw objects
 	sphere->draw(renderPass);
-	// Draw Suzanne
 	Suzanne->draw(renderPass);
-	// Draw cube with lines
 	cube.draw(renderPass);
-	// Draw grids
 	gridPlaneTop.draw(renderPass);
 	gridPlaneBottom.draw(renderPass);
 };
 
-// Callback function to process keyboard events
+// Process keyboard events
 void keyEvent(SDL_Event& event) {
 	auto key = event.key.keysym.sym;
 	// Check for key presses and take appropriate action
@@ -178,8 +242,9 @@ void keyEvent(SDL_Event& event) {
 	}
 }
 
-// Callback function to process mouse events
+// Process mouse events
 void mouseEvent(SDL_Event& event) {
+	// SDL_GetMouseState(&xpos, &ypos); // Use to set the mouse position?
     if (event.type == SDL_MOUSEBUTTONDOWN) {
 		lastMouse_x = event.button.x;	
 		lastMouse_y = event.button.y;	
@@ -199,78 +264,6 @@ void mouseEvent(SDL_Event& event) {
 		float zoomIncrement = event.wheel.y * zoomPerClick;
 		camera.zoom(zoomIncrement);
 	}
-}
-
-//Main function ===============================================================
-
-int main() {
-
-	// Define and initialize Graphics renderer (needs to be done first)
-    SDLRenderer renderer;
-    renderer.init();
-
-	// Initialize camera
-	glm::vec3 position {0.0, 0.0, 2.0*cubeSideLength};
-	glm::vec3 direction {0.0, 0.0, -1.0};
-	glm::vec3 worldUp {0.0, 1.0, 0.0};
-	float speed = cubeSideLength/3.0;
-	float fieldOfView= 45.0;
-	camera.init(position, direction, worldUp, speed, fieldOfView);
-//	camera.init({0.0, 0.0,  2.0*cubeSideLength}, // position
-//				{0.0, 0.0, -1.0}, // direction
-//				{0.0, 1.0,  0.0}, // worldUp
-//				cubeSideLength/3.0, 45.0) { // speed, fieldOfView
-
-	// SDL_CaptureMouse(SDL_TRUE); // Capture the mouse (mouse won't be visible)
-
-	// Initialize lighting
-    worldLights.setAmbientLight({0.05,0.05,0.05});
-	Light sun = Light::create()
-				.withDirectionalLight({1, 1,1})
-				.withColor({1,1,1})
-				.build();
-    worldLights.addLight(sun);
-
-	// Set up the sky (with a horizon, called the 'Skybox')
-    skybox = Skybox::create();
-
-	// Initialize sphere
-	std::shared_ptr<Material> sphereMaterial;
-    sphereMaterial = Shader::getStandardPBR()->createMaterial();
-    sphereMaterial->setColor({0.0f, 1.0f, 0.0f, 1.0f});
-    sphereMaterial->setMetallicRoughness({0.5f, 0.5f});
-    sphere = Mesh::create()
-					.withSphere()
-					.withLocation({0.0, 0.0, 0.0})
-					.withScale(cubeSideLength/5.0)
-					.withMaterial(sphereMaterial)
-					.build();
-
-	// Initialize the monkey object Suzanne 
-	std::shared_ptr<Material> SuzanneMaterial;
-    SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
-    SuzanneMaterial->setColor({1.0f, 1.0f, 1.0f, 1.0f});
-    SuzanneMaterial->setMetallicRoughness({0.3f, 0.3f});
-	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
-	Suzanne->setLocation({4.0 * gridSpace, 0.0, 0.0});
-	Suzanne->setScale(cubeSideLength/5.0);
-	Suzanne->setMaterial(SuzanneMaterial);
-
-	// ==== Use initialized variables in SDLRenderer 'callback' functions ====
-	// Assign callback to update rendering frame (assign renderer function)
-    renderer.frameUpdate = frameUpdate;
-	// Assign callback to render the updated frame (assign renderer function)
-    renderer.frameRender = frameRender;
-	// Assign callback to process mouse events (assign renderer function)
-    renderer.mouseEvent = mouseEvent;
-	// Assign callback to process keyboard events (assign renderer function)
-    renderer.keyEvent = keyEvent;
-
-	// Start processing mouse and keyboard events (continue until user quits)
-    renderer.startEventLoop();
-
-	// Exit the program
-    return 0;
 }
 
 // Cube class =================================================================
