@@ -33,22 +33,6 @@
 using namespace sre;
 using namespace glm;
 
-// Definition of Cube class
-class Cube {
-public:
-    Cube();
-    Cube(const glm::vec3 & center, const float& sideLen);
-    void initializeVertexes();
-    void draw(RenderPass& renderPass);
-    void setCenter(const glm::vec3& center);
-    glm::vec3 getCenter();
-private:
-    float mSideLen;
-    glm::vec3 mCenter, m_xAxis, m_yAxis, m_zAxis;
-    glm::vec3 mP1, mP2, mP3, mP4, mP5, mP6, mP7, mP8;
-    glm::vec3 mWorldOrigin;
-};
-
 // Definition of GridPlane class
 class GridPlane {
 public:
@@ -71,9 +55,9 @@ private:
 
 float worldUnit = 1.0; // Used as a unit of measure to scale all objects
 float elapsedTime = 0.0f;
+std::shared_ptr<Mesh> wireCube;
 std::shared_ptr<Mesh> sphere;
 std::shared_ptr<Mesh> Suzanne; // Monkey object
-Cube cube {{0.0, 0.0, 0.0}, 5.0f * worldUnit};
 
 // Grids (note: grid should come first, others use info)
 float gridSpace = 5.0f * worldUnit;
@@ -136,6 +120,17 @@ int main() {
 	// Create the sky (with a horizon, called the 'Skybox')
     skybox = Skybox::create();
 
+	// Create wireframe cube
+	std::shared_ptr<Material> wireCubeMaterial;
+    wireCubeMaterial = Shader::getUnlit()->createMaterial();
+	wireCubeMaterial->setColor({0.0, 1.0, 0.0, 1.0});
+    wireCube = Mesh::create()
+					.withWireCube()
+					.withLocation({0.0, 0.0, 0.0})
+					.withScale(2.5f * worldUnit)
+					.withMaterial(wireCubeMaterial)
+					.build();
+
 	// Create sphere
 	std::shared_ptr<Material> sphereMaterial;
     sphereMaterial = Shader::getStandardPBR()->createMaterial();
@@ -189,9 +184,9 @@ void frameRender() {
    	     .withName("Frame")
    	     .build();
 	// Draw objects
+	wireCube->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
-	cube.draw(renderPass);
 	gridPlaneTop.draw(renderPass);
 	gridPlaneBottom.draw(renderPass);
 };
@@ -264,77 +259,6 @@ void mouseEvent(SDL_Event& event) {
 		float zoomIncrement = event.wheel.y * zoomPerClick;
 		camera.zoom(zoomIncrement);
 	}
-}
-
-// Cube class =================================================================
-
-Cube::Cube() {
-	mWorldOrigin = {0.0, 0.0, 0.0};
-	mSideLen = {1.0};
-	mCenter = {0,0,0};
-	initializeVertexes();
-}
-
-Cube::Cube(const glm::vec3 & center, const float& sideLen) {
-	mWorldOrigin = {0.0, 0.0, 0.0};
-	mSideLen = {sideLen};
-	mCenter = {center};
-	initializeVertexes();
-}
-
-void
-Cube::initializeVertexes() {
-	//Points at end of of cube coordinate axes
-//	m_xAxis {1.1*mSideLen, mCenter.y, mCenter.z};
-//	m_yAxis {mCenter.x, 1.1*mSideLen, mCenter.z};
-//	m_zAxis {mCenter.x, mCenter.y, 1.1*mSideLen};
-
-	//Points at end of of world coordinate axes
-	m_xAxis = {1.1*mSideLen, mWorldOrigin.y, mWorldOrigin.z};
-	m_yAxis = {mWorldOrigin.x, 1.1*mSideLen, mWorldOrigin.z};
-	m_zAxis = {mWorldOrigin.x,mWorldOrigin.y, 1.1*mSideLen};
-
-	// Points of cube
-	mP1 = {mCenter.x-0.5*mSideLen, mCenter.y+0.5*mSideLen, 
-														mCenter.z+0.5*mSideLen};
-	mP2 = mP1 + vec3(mSideLen, 0, 0);
-	mP3 = mP2 + vec3(0, -mSideLen, 0);
-	mP4 = mP3 + vec3(-mSideLen, 0, 0);
-	mP5 = mP1 + vec3(0, 0, -mSideLen);
-	mP6 = mP2 + vec3(0, 0, -mSideLen);
-	mP7 = mP3 + vec3(0, 0, -mSideLen);
-	mP8 = mP4 + vec3(0, 0, -mSideLen);
-}
-
-void
-Cube::draw(RenderPass& renderPass) {
-	Color red {1.0f, 0.0f, 0.0f, 1.0f};
-	Color green {0.0f, 1.0f, 0.0f, 1.0f};
-	Color blue {0.0f, 0.0f, 1.0f, 1.0f};
-	// Draw cube coordinate axes
-//	renderPass.drawLines({mCenter, m_xAxis}, red);
-//	renderPass.drawLines({mCenter, m_yAxis}, green);
-//	renderPass.drawLines({mCenter, m_zAxis}, blue);
-	// Draw world coordinate axes
-	renderPass.drawLines({mWorldOrigin, m_xAxis}, red);
-	renderPass.drawLines({mWorldOrigin, m_yAxis}, green);
-	renderPass.drawLines({mWorldOrigin, m_zAxis}, blue);
-	// Draw cube sides
-	renderPass.drawLines({mP1, mP2});
-	renderPass.drawLines({mP2, mP3, mP3, mP4, mP4, mP1});
-	renderPass.drawLines({mP5, mP6, mP6, mP7, mP7, mP8, mP8, mP5});
-	renderPass.drawLines({mP1, mP5, mP2, mP6, mP3, mP7, mP4, mP8});
-}
-
-void
-Cube::setCenter(const glm::vec3& center) {
-	mCenter = center;
-	initializeVertexes();
-}
-
-vec3
-Cube::getCenter() {
-	return mCenter;
 }
 
 // GridPlane class ============================================================
