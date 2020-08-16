@@ -148,7 +148,7 @@ namespace sre {
                     depthStr = "None";
                     break;
             }
-            ImGui::LabelText("Depth",depthStr);
+            ImGui::LabelText("Depth", "%s", depthStr);
             ImGui::LabelText("Filtersampling","%s",tex->isFilterSampling()?"true":"false");
             ImGui::LabelText("Mipmapping","%s",tex->isMipmapped()?"true":"false");
             ImGui::LabelText("Transparent","%s",tex->isTransparent()?"true":"false");
@@ -160,7 +160,7 @@ namespace sre {
             }
             ImGui::LabelText("Colorspace", "%s", colorSpace);
             const char* wrap = tex->getWrapUV()==Texture::Wrap::Repeat?"Repeat":(tex->getWrapUV()==Texture::Wrap::Mirror?"Mirror":"Clamp to edge");
-            ImGui::LabelText("Wrap tex-coords",wrap);
+            ImGui::LabelText("Wrap tex-coords","%s",wrap);
             ImGui::LabelText("Data size","%f MB",tex->getDataSize()/(1000*1000.0f));
             if (!tex->isCubemap()){
                 ImGui_RenderTexture(tex,glm::vec2(previewSize, previewSize),{0,1},{1,0});
@@ -205,16 +205,16 @@ namespace sre {
                     if (ImGui::TreeNode(attributeName.c_str())) {
                         auto attributeType = att.second.attributeType;
                         auto attributeTypeStr = std::to_string(attributeType);
-                        ImGui::LabelText("attributeType", attributeTypeStr.c_str());
+                        ImGui::LabelText("attributeType", "%s", attributeTypeStr.c_str());
                         auto dataType = att.second.dataType;
                         auto dataTypeStr = std::to_string(dataType);
-                        ImGui::LabelText("dataType", dataTypeStr.c_str());
+                        ImGui::LabelText("dataType", "%s", dataTypeStr.c_str());
                         auto elementCount = att.second.elementCount;
                         auto elementCountStr = std::to_string(elementCount);
-                        ImGui::LabelText("elementCount", elementCountStr.c_str());
+                        ImGui::LabelText("elementCount", "%s", elementCountStr.c_str());
                         auto offset = att.second.offset;
                         auto offsetStr = std::to_string(offset);
-                        ImGui::LabelText("offset", offsetStr.c_str());
+                        ImGui::LabelText("offset", "%s", offsetStr.c_str());
                         static int vertexOffset = 0;
                         if (ImGui::Button("<<")){
                             vertexOffset = 0;
@@ -238,7 +238,7 @@ namespace sre {
                                 }
                                 std::string label = "Value ";
                                 label+= std::to_string(j);
-                                ImGui::LabelText(label.c_str(), value.c_str());
+                                ImGui::LabelText("%s %s", label.c_str(), value.c_str());
                             }
                         } else {
                             for (int j=vertexOffset;j<std::min(vertexOffset+5,mesh->vertexCount); j++){
@@ -249,7 +249,7 @@ namespace sre {
                                 }
                                 std::string label = "Value ";
                                 label+= std::to_string(j);
-                                ImGui::LabelText(label.c_str(), value.c_str());
+                                ImGui::LabelText("%s %s", label.c_str(), value.c_str());
                             }
                         }
 
@@ -323,7 +323,7 @@ namespace sre {
                     auto type = shader->getAttibuteType(a);
                     std::string typeStr = glEnumToString(type.first);
                     typeStr = appendSize(typeStr, type.second);
-                    ImGui::LabelText(a.c_str(), typeStr.c_str());
+                    ImGui::LabelText("%s %s", a.c_str(), typeStr.c_str());
                 }
                 ImGui::TreePop();
             }
@@ -333,13 +333,13 @@ namespace sre {
                     auto type = shader->getUniform(a);
                     std::string typeStr = glUniformToString(type.type);
                     typeStr = appendSize(typeStr, type.arraySize);
-                    ImGui::LabelText(a.c_str(), typeStr.c_str());
+                    ImGui::LabelText("%s %s", a.c_str(), typeStr.c_str());
                 }
                 ImGui::TreePop();
             }
             if (ImGui::TreeNode("Specialization")) {
                 for (auto a : specialization ){
-                    ImGui::LabelText(a.first.c_str(), a.second.c_str());
+                    ImGui::LabelText("%s %s", a.first.c_str(), a.second.c_str());
                 }
                 ImGui::TreePop();
             }
@@ -405,13 +405,13 @@ namespace sre {
                             func = "Disabled";
                             break;
                     }
-                    ImGui::LabelText("Function",func.c_str());
+                    ImGui::LabelText("Function","%s",func.c_str());
                     ImGui::LabelText("Ref","%i",stencil.ref);
                     ImGui::LabelText("Mask","%i",stencil.mask);
 
-                    ImGui::LabelText("Fail Operation",to_string(stencil.fail));
-                    ImGui::LabelText("ZFail Operation",to_string(stencil.zfail));
-                    ImGui::LabelText("ZPass Operation",to_string(stencil.zpass));
+                    ImGui::LabelText("Fail Operation","%s",to_string(stencil.fail));
+                    ImGui::LabelText("ZFail Operation","%s",to_string(stencil.zfail));
+                    ImGui::LabelText("ZPass Operation","%s",to_string(stencil.zpass));
 
 
                     ImGui::TreePop();
@@ -526,7 +526,7 @@ namespace sre {
                              renderInfo().graphicsAPIVersionMinor,
                              renderInfo().graphicsAPIVersionES?" ES":"");
 
-            ImGui::LabelText("OpenGL vendor", renderInfo().graphicsAPIVendor.c_str());
+            ImGui::LabelText("OpenGL vendor", "%s", renderInfo().graphicsAPIVendor.c_str());
 
             SDL_version compiled;
             SDL_version linked;
@@ -613,7 +613,7 @@ namespace sre {
                     ImGui::PushID(rp.get());
                     if (ImGui::TreeNode(label)) {
                         showCamera(&rp->builder.camera);
-                        ImGui::LabelText("Framebuffer",
+                        ImGui::LabelText("Framebuffer", "%s", 
                                          rp->builder.framebuffer.get() ? rp->builder.framebuffer->getName().c_str()
                                                                        : "default");
                         showWorldLights(rp->builder.worldLights);
@@ -961,7 +961,7 @@ namespace sre {
             if (ImGui::CollapsingHeader("Warnings / Errors")){
                 for (int i=0;i<errors.size();i++){
                     std::string id = std::string("##_errors_")+std::to_string(i);
-                    ImGui::LabelText(id.c_str(), errors[i].c_str());
+                    ImGui::LabelText("%s %s", id.c_str(), errors[i].c_str());
                 }
             }
         }
@@ -1053,8 +1053,8 @@ namespace sre {
 
     void Inspector::showMaterial(Material *material) {
         char res[128];
-        ImGui::LabelText("Material", material->getName().c_str());
-        ImGui::LabelText("Shader", material->getShader()->getName().c_str());
+        ImGui::LabelText("Material", "%s", material->getName().c_str());
+        ImGui::LabelText("Shader", "%s", material->getShader()->getName().c_str());
         if (ImGui::TreeNode("Uniform values")){
 
             for (auto& name : material->shader->getUniformNames()){
@@ -1075,7 +1075,7 @@ namespace sre {
                     case UniformType::Texture:
                     case UniformType::TextureCube:{
                         std::shared_ptr<Texture> valueTex = material->get<std::shared_ptr<Texture>>(name);
-                        ImGui::LabelText(name.c_str(),valueTex->getName().c_str());
+                        ImGui::LabelText("%s %s",name.c_str(),valueTex->getName().c_str());
                     }
                         break;
                     case UniformType::Mat3Array:
