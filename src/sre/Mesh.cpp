@@ -1076,6 +1076,54 @@ namespace sre {
         return *this;
 	}
 
+	Mesh::MeshBuilder &Mesh::MeshBuilder::withWirePlane(int numIntervals, float length) {
+        using namespace glm;
+        using namespace std;
+
+        if (name.length() == 0){
+            std::stringstream ss;
+            ss <<"SRE Wire Plane, with "<<numIntervals<<" intervals";
+            name = ss.str();
+        }
+
+		float gridSpace = 2.0f * length / numIntervals;
+		int numLines = numIntervals + 1;
+
+        vector<vec3> positions;
+		positions.resize(numLines * numLines);
+
+		vec3 lowerLeft = {-length, 0.0, -length};
+		vec3 currentCoord = lowerLeft;
+
+		int index = 0;
+		for (auto i = 0; i < numLines; i++) {
+			for (auto j = 0; j < numLines; j++) {
+				positions[index] = currentCoord;
+				index += 1;
+				currentCoord.z += gridSpace;
+			}
+			currentCoord.z = lowerLeft.z;
+			currentCoord.x += gridSpace;
+		}
+		
+        vector<uint32_t> indices;
+
+        for (int i=0;i<positions.size();i++){
+            for (int j=0;j<i;j++){
+                if (glm::length(positions[i]-positions[j]) <= gridSpace*1.1f){
+                    indices.push_back(i);
+                    indices.push_back(j);
+                }
+            }
+        }
+
+        withPositions(positions);
+        withIndices(indices);
+        withMeshTopology(MeshTopology::Lines);
+
+        return *this;
+	}
+
     Mesh::MeshBuilder &Mesh::MeshBuilder::withQuad(float size) {
         if (name.length() == 0){
             std::stringstream ss;

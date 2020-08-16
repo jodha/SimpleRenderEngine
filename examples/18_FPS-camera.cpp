@@ -55,6 +55,7 @@ private:
 
 float worldUnit = 1.0; // Used as a unit of measure to scale all objects
 float elapsedTime = 0.0f;
+std::shared_ptr<Mesh> wirePlaneTop;
 std::shared_ptr<Mesh> wireCube;
 std::shared_ptr<Mesh> sphere;
 std::shared_ptr<Mesh> Suzanne; // Monkey object
@@ -119,6 +120,17 @@ int main() {
 
 	// Create the sky (with a horizon, called the 'Skybox')
     skybox = Skybox::create();
+
+	// Create wireframe plane at top of domaine
+	std::shared_ptr<Material> wirePlaneTopMaterial;
+    wirePlaneTopMaterial = Shader::getUnlit()->createMaterial();
+	wirePlaneTopMaterial->setColor({0.0, 0.0, 0.0, 1.0});
+    wirePlaneTop = Mesh::create()
+					.withWirePlane(30) // 30 intervals 
+					.withLocation({0.0, 19.5 * worldUnit, 0.0})
+					.withScale(75.0f * worldUnit)
+					.withMaterial(wirePlaneTopMaterial)
+					.build();
 
 	// Create wireframe cube
 	std::shared_ptr<Material> wireCubeMaterial;
@@ -187,6 +199,7 @@ void frameRender() {
 	wireCube->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
+	wirePlaneTop->draw(renderPass);
 	gridPlaneTop.draw(renderPass);
 	gridPlaneBottom.draw(renderPass);
 };
