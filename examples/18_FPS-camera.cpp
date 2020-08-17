@@ -12,67 +12,36 @@
 #include <sre/ModelImporter.hpp>
 #include <glm/gtc/type_ptr.hpp>
 // Needed to add the following (remove later) to access 'eulerAngleXYZ'
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtc/constants.hpp>
+//#include <glm/gtx/euler_angles.hpp>
+//#include <glm/gtc/constants.hpp>
 // Needed the following (remove later) to assert a camera condition
-#include <cassert>
+//#include <cassert>
 
 // Things to do:
-// 2) Place a few objects in the domain
-// 3) Create a camera class (use LearnOpenGL as a [partial] example)
-// 4) Do full "space flight" demo for Max (show original camera demo first,
+// 2) Place a few new objects from Free3D in the domain
+// 4) Do full "flight" demo for Max (show original camera demo first,
 //		followd by mileposts in development [if Max wants to see that much])
-// 5) Fork SimpleRenderEngine
-//		a) Create branch for porting fixes
-//		b) Test on port to Windows and new Linux computer
-//		c) Make pull request
-//		d) Create branch for new Camera
-//		e) Add updated Camera class and new example and make pull request
+// 5) Test on port to Windows and new Linux computer
 // 6) Scale movement (both keyboard and mouse) by frame rate
 
 using namespace sre;
 using namespace glm;
 
-// Definition of GridPlane class
-class GridPlane {
-public:
-    GridPlane();
-    GridPlane(const glm::vec3 & center, const float& sideLen,
-			  const float& gridSpace, const Color& color);
-    void initializeGrid();
-    void draw(RenderPass& renderPass);
-private:
-    glm::vec3 mCenter;
-    float mSideLen;
-	float mGridSpace;
-	int mNumCells;
-	Color mColor;
-    std::vector<std::vector<glm::vec3>> m_zLines;
-    std::vector<std::vector<glm::vec3>> m_xLines;
-};
-
 // Global variables ============================================================
 
-float worldUnit = 1.0; // Used as a unit of measure to scale all objects
-float elapsedTime = 0.0f;
-std::shared_ptr<Mesh> wirePlaneTop;
-std::shared_ptr<Mesh> wireCube;
-std::shared_ptr<Mesh> sphere;
-std::shared_ptr<Mesh> Suzanne; // Monkey object
-
-// Grids (note: grid should come first, others use info)
-float gridSpace = 5.0f * worldUnit;
-float gridLength = 150.0f * worldUnit;
-Color black {0.0f, 0.0f, 0.0f, 1.0f};
-Color white {1.0f, 1.0f, 1.0f, 1.0f};
-GridPlane gridPlaneTop {{0.0, 4.0 * gridSpace, 0.0},
-						gridLength, gridSpace, black};
-GridPlane gridPlaneBottom {{0.0, -4.0 * gridSpace, 0.0},
-							gridLength, gridSpace, white};
-
+// Environment
 FPS_Camera camera;
 WorldLights worldLights;
 std::shared_ptr<Skybox> skybox;
+float elapsedTime = 0.0f;
+float worldUnit = 1.0; // Used as a unit of measure to scale all objects
+
+// Objects
+std::shared_ptr<Mesh> gridPlaneTop;
+std::shared_ptr<Mesh> gridPlaneBottom;
+std::shared_ptr<Mesh> torus;
+std::shared_ptr<Mesh> sphere;
+std::shared_ptr<Mesh> Suzanne; // Monkey object
 
 // Mouse callback state
 bool mouseDown = false;
@@ -99,69 +68,80 @@ int main() {
     renderer.keyEvent = keyEvent;
 
 	// Create camera
-	glm::vec3 position {0.0, 0.0, 65.0f * worldUnit};
-	glm::vec3 direction {0.0, 0.0, -1.0};
-	glm::vec3 worldUp {0.0, 1.0, 0.0};
+	glm::vec3 position {0.0f, 0.0f, 50.0f * worldUnit};
+	glm::vec3 direction {0.0f, 0.0f, -1.0f};
+	glm::vec3 worldUp {0.0f, 1.0f, 0.0f};
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
-	float fieldOfView= 45.0;
+	float fieldOfView= 45.0f;
 	camera.init(position, direction, worldUp, speed, fieldOfView);
-//	camera.init({0.0, 0.0,  10.0f * worldUnit}, // position
-//				{0.0, 0.0, -1.0}, // direction
-//				{0.0, 1.0,  0.0}, // worldUp
-//				2.0f * worldUnit, 45.0) { // speed, fieldOfView
+//	camera.init({0.0f, 0.0f, 10.0f * worldUnit}, // position
+//				{0.0f, 0.0f, -1.0f}, // direction
+//				{0.0f, 1.0f,  0.0f}, // worldUp
+//				2.0f * worldUnit, 45.0f) { // speed, fieldOfView
 
 	// Create lighting
-    worldLights.setAmbientLight({0.05,0.05,0.05});
+    worldLights.setAmbientLight({0.05f, 0.05f, 0.05f});
 	Light sun = Light::create()
-				.withDirectionalLight({1, 1,1})
-				.withColor({1,1,1})
+				.withDirectionalLight({1.0f, 1.0f, 1.0f})
+				.withColor({1.0f, 1.0f, 1.0f})
 				.build();
     worldLights.addLight(sun);
 
 	// Create the sky (with a horizon, called the 'Skybox')
     skybox = Skybox::create();
 
-	// Create wireframe plane at top of domaine
-	std::shared_ptr<Material> wirePlaneTopMaterial;
-    wirePlaneTopMaterial = Shader::getUnlit()->createMaterial();
-	wirePlaneTopMaterial->setColor({0.0, 0.0, 0.0, 1.0});
-    wirePlaneTop = Mesh::create()
+	// Create a grid (wireframe) plane at top of domaine
+    auto gridPlaneTopMaterial = Shader::getUnlit()->createMaterial();
+	gridPlaneTopMaterial->setColor({0.0f, 0.0f, 0.0f, 1.0f});
+    gridPlaneTop = Mesh::create()
 					.withWirePlane(30) // 30 intervals 
-					.withLocation({0.0, 19.5 * worldUnit, 0.0})
+					.withLocation({0.0f, 20.0f * worldUnit, 0.0f})
 					.withScale(75.0f * worldUnit)
-					.withMaterial(wirePlaneTopMaterial)
+					.withMaterial(gridPlaneTopMaterial)
 					.build();
 
-	// Create wireframe cube
-	std::shared_ptr<Material> wireCubeMaterial;
-    wireCubeMaterial = Shader::getUnlit()->createMaterial();
-	wireCubeMaterial->setColor({0.0, 1.0, 0.0, 1.0});
-    wireCube = Mesh::create()
-					.withWireCube()
-					.withLocation({0.0, 0.0, 0.0})
+	// Create a grid (wireframe) plane at bottom of the domaine
+    auto gridPlaneBottomMaterial = Shader::getUnlit()->createMaterial();
+	gridPlaneBottomMaterial->setColor({1.0f, 1.0f, 1.0f, 1.0f});
+    gridPlaneBottom = Mesh::create()
+					.withWirePlane(30) // 30 intervals 
+					.withLocation({0.0f, -20.0f * worldUnit, 0.0f})
+					.withScale(75.0f * worldUnit)
+					.withMaterial(gridPlaneBottomMaterial)
+					.build();
+
+	// Create torus
+	auto torusMaterial = Shader::getStandardPBR()->createMaterial();
+	torusMaterial->setColor({1.0f,1.0f,1.0f,1.0f});
+    torusMaterial->setMetallicRoughness({0.5f, 0.5f});
+	int segmentsC = 48;
+	int segmentsA = 48;
+    torus = Mesh::create()
+					.withTorus(segmentsC, segmentsA)
+					.withLocation({0.0f, 0.0f, 0.0f})
 					.withScale(2.5f * worldUnit)
-					.withMaterial(wireCubeMaterial)
+					.withMaterial(torusMaterial)
 					.build();
 
 	// Create sphere
-	std::shared_ptr<Material> sphereMaterial;
-    sphereMaterial = Shader::getStandardPBR()->createMaterial();
+    auto sphereMaterial = Shader::getStandardPBR()->createMaterial();
     sphereMaterial->setColor({0.0f, 1.0f, 0.0f, 1.0f});
     sphereMaterial->setMetallicRoughness({0.5f, 0.5f});
+	int stacks = 32;
+	int slices = 64;
     sphere = Mesh::create()
-					.withSphere()
-					.withLocation({0.0, 0.0, 0.0})
+					.withSphere(stacks, slices)
+					.withLocation({-20.0f * worldUnit, 0.0f, 0.0f})
 					.withScale(worldUnit)
 					.withMaterial(sphereMaterial)
 					.build();
 
 	// Create the monkey object "Suzanne"
-	std::shared_ptr<Material> SuzanneMaterial;
-    SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
+    auto SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
     SuzanneMaterial->setColor({1.0f, 0.7f, 0.2f, 1.0f});
     SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
 	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
-	Suzanne->setLocation({20.0f * worldUnit, 0.0, 0.0});
+	Suzanne->setLocation({20.0f * worldUnit, 0.0f, 0.0f});
 	Suzanne->setScale(worldUnit);
 	Suzanne->setMaterial(SuzanneMaterial);
 
@@ -182,7 +162,7 @@ int main() {
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->Location();	
-	sphereLocation.z += cos(elapsedTime/50.0f)/7.0;
+	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };
 
@@ -196,12 +176,11 @@ void frameRender() {
    	     .withName("Frame")
    	     .build();
 	// Draw objects
-	wireCube->draw(renderPass);
+	gridPlaneTop->draw(renderPass);
+	gridPlaneBottom->draw(renderPass);
+	torus->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
-	wirePlaneTop->draw(renderPass);
-	gridPlaneTop.draw(renderPass);
-	gridPlaneBottom.draw(renderPass);
 };
 
 // Process keyboard events
@@ -261,83 +240,15 @@ void mouseEvent(SDL_Event& event) {
 		mouseDown = false;
 	} else if (event.type == SDL_MOUSEMOTION && mouseDown) {
 		// Mouse movement is degrees per pixel moved
-        float degreesPerPixel = 0.1;
+        float degreesPerPixel = 0.1f;
 		float yaw = (event.motion.x - lastMouse_x) * degreesPerPixel;
 		float pitch = (lastMouse_y - event.motion.y) * degreesPerPixel;
 		lastMouse_x = event.motion.x;
 		lastMouse_y = event.motion.y;
 		camera.pitchAndYaw(pitch, yaw);
     } else if (event.type == SDL_MOUSEWHEEL){ // Works for two-finger touch
-		float zoomPerClick = 0.5;
+		float zoomPerClick = 0.5f;
 		float zoomIncrement = event.wheel.y * zoomPerClick;
 		camera.zoom(zoomIncrement);
-	}
-}
-
-// GridPlane class ============================================================
-
-GridPlane::GridPlane() {
-	mCenter = {0,0,0};
-	mSideLen = {10.0};
-	mGridSpace = 1.0;
-	mNumCells = static_cast<int>(mSideLen/mGridSpace);
-	mColor = {1.0f, 0.0f, 0.0f, 1.0f}; // Red
-	initializeGrid();
-}
-
-GridPlane::GridPlane(const glm::vec3 & center, const float& sideLen,
-					 const float& gridSpace, const Color& color) {
-	mCenter = {center};
-	mSideLen = {sideLen};
-	mGridSpace = {gridSpace};
-	mNumCells = static_cast<int>(mSideLen/mGridSpace);
-	mColor = color;
-	initializeGrid();
-}
-
-void
-GridPlane::initializeGrid() {
-	
-	m_zLines.resize(mNumCells+1);
-	for (auto& z : m_zLines) {
-		z.resize(mNumCells + mNumCells);
-	}
-	vec3 lowerLeft = {-0.5*mSideLen + mCenter.x, mCenter.y,
-					  -0.5*mSideLen + mCenter.z};
-	vec3 currentCoord = lowerLeft;
-
-	for (auto i = 0; i < mNumCells+1; i++) {
-		for (auto j = 0; j < mNumCells +  mNumCells; j++) {
-			m_zLines[i][j] = currentCoord;
-			if (j % 2 == 0) currentCoord.x += mGridSpace;	
-		}
-		currentCoord.x = lowerLeft.x;
-		currentCoord.z += mGridSpace;
-	}
-
-	m_xLines.resize(mNumCells+1);
-	for (auto& x : m_xLines) {
-		x.resize(mNumCells + mNumCells);
-	}
-
-	currentCoord = lowerLeft;
-
-	for (auto i = 0; i < mNumCells+1; i++) {
-		for (auto j = 0; j < mNumCells +  mNumCells; j++) {
-			m_xLines[i][j] = currentCoord;
-			if (j % 2 == 0) currentCoord.z += mGridSpace;	
-		}
-		currentCoord.z = lowerLeft.z;
-		currentCoord.x += mGridSpace;
-	}
-}
-
-void
-GridPlane::draw(RenderPass& renderPass) {
-	for (auto i = 0; i < mNumCells+1; i++) {
-		renderPass.drawLines(m_zLines[i], mColor);
-	}
-	for (auto i = 0; i < mNumCells+1; i++) {
-		renderPass.drawLines(m_xLines[i], mColor);
 	}
 }
