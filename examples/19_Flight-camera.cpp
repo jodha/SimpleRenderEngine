@@ -30,7 +30,7 @@ using namespace glm;
 // Global variables ============================================================
 
 // Environment
-FPS_Camera camera;
+FlightCamera camera;
 WorldLights worldLights;
 std::shared_ptr<Skybox> skybox;
 float elapsedTime = 0.0f;
@@ -70,14 +70,14 @@ int main() {
 	// Create camera
 	glm::vec3 position {0.0f, 0.0f, 50.0f * worldUnit};
 	glm::vec3 direction {0.0f, 0.0f, -1.0f};
-	glm::vec3 worldUp {0.0f, 1.0f, 0.0f};
+	glm::vec3 up {0.0f, 1.0f, 0.0f};
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
 	float rotationSpeed = 5.0f; // 5 degrees / second
 	float fieldOfView= 45.0f;
-	camera.init(position,direction,worldUp, speed,rotationSpeed,fieldOfView);
+	camera.init(position,direction,up, speed,rotationSpeed,fieldOfView);
 //	camera.init({0.0f, 0.0f, 10.0f * worldUnit}, // position
 //				{0.0f, 0.0f, -1.0f}, // direction
-//				{0.0f, 1.0f,  0.0f}, // worldUp
+//				{0.0f, 1.0f,  0.0f}, // up
 //				2.0f * worldUnit, 5.0f, // speed, rotationSpeed
 //				45.0f)  // fieldOfView
 
@@ -199,35 +199,32 @@ void keyEvent(SDL_Event& event) {
 			}
 		}
 		if (key == SDLK_w || key == SDLK_k || key == SDLK_UP ||
-			key == SDLK_s || key == SDLK_j || key == SDLK_DOWN ||
-			key == SDLK_a || key == SDLK_h || key == SDLK_LEFT ||
-			key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT ||
-			key == SDLK_LCTRL || key == SDLK_SPACE || key == SDLK_LSHIFT ||
-			key == SDLK_z) {
-			// Calculate the distance the camera should move
-			// Assume user presses a key in 1/5 of a second (5 presses per sec)
-			// Distance traveled in 1/5 of a second = speed (unit/s) * time (s)
-			float distance = camera.getSpeed() * 1.0/5.0;
-			if (key == SDLK_w || key == SDLK_k || key == SDLK_UP) {
-				// Move camera forward in horizontal plane towards target
-				camera.move(FPS_Camera::Direction::Forward, distance);
-			} else if (key == SDLK_s || key == SDLK_j || key == SDLK_DOWN) {
-				// Move camera backward in horizontal plane away from target
-				camera.move(FPS_Camera::Direction::Backward, distance);
-			} else if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT) {
-				// Move camera (strafe) left
-				camera.move(FPS_Camera::Direction::Left, distance);
-			} else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
-				// Move camera (strafe) right
-				camera.move(FPS_Camera::Direction::Right, distance);
-			} else if (key == SDLK_SPACE) {		// Minecraft uses LCTRL || SPACE
-				// Move camera up vertically 
-				camera.move(FPS_Camera::Direction::Up, distance);
-			} else if (key == SDLK_z) {   		// Minecraft uses LSHIFT
-				// Move camera down vertically	// Max uses  LCTRL
-				camera.move(FPS_Camera::Direction::Down, distance);
-			}
-		}
+            key == SDLK_s || key == SDLK_j || key == SDLK_DOWN) {
+            // Calculate the distance the camera should move
+            // Assume user presses a key in 1/5 of a second (5 presses per sec)
+            // Distance traveled in 1/5 of a second = speed (unit/s) * time (s)
+            float distance = camera.getSpeed() * 1.0/5.0;
+            if (key == SDLK_w || key == SDLK_k || key == SDLK_UP) {
+                // Move camera forward, towards target
+                camera.move(distance);
+            } else if (key == SDLK_s || key == SDLK_j || key == SDLK_DOWN) {
+                // Move camera backward, away from target
+                camera.move(-distance);
+            }
+        }
+        if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT ||
+            key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
+            // Roll camera (see explanation above; rotation is in degrees/sec)
+            float degrees = camera.getRotationSpeed() * 1.0/5.0;
+            if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT) {
+                // Roll camera counter-clockwise
+                camera.roll(degrees);
+            } else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
+                // Roll camera clockwise
+                camera.roll(-degrees);
+            }
+        }
+
 	}
 }
 

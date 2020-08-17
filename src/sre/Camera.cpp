@@ -162,7 +162,7 @@ namespace sre {
 
     }
 
-// FPS_Camera Class Method Implementations
+// FPS_Camera Class Method Implementations =====================================
 
 FPS_Camera::FPS_Camera(): Camera() {
 	position = {0.0, 0.0, 0.0};
@@ -172,18 +172,18 @@ FPS_Camera::FPS_Camera(): Camera() {
 	right = glm::cross(direction, up);
 	forward = direction - glm::dot(direction, worldUp) * worldUp;
 	forwardLen = glm::length(forward);
-	fieldOfView = 45.0;
 	speed = 1.0;
+	rotationSpeed = 1.0;
+	fieldOfView = 45.0;
 	float nearPlane = 0.1f;
 	float farPlane = 150.0f;
     setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
     lookAt(position, position + direction, up);
 }	
 	
-void
-FPS_Camera::init(glm::vec3 positionIn, glm::vec3 directionIn,
-				 glm::vec3 worldUpIn, float speedIn, float fieldOfViewIn,
-				 float nearPlane, float farPlane) {
+void FPS_Camera::init(glm::vec3 positionIn, glm::vec3 directionIn,
+				  	glm::vec3 worldUpIn, float speedIn, float rotationSpeedIn,
+					float fieldOfViewIn, float nearPlane, float farPlane) {
 	position = positionIn;
 	direction = directionIn;
 	worldUp = worldUpIn;
@@ -191,24 +191,30 @@ FPS_Camera::init(glm::vec3 positionIn, glm::vec3 directionIn,
 	right = glm::cross(direction, up);
 	forward = direction - glm::dot(direction, worldUp) * worldUp;
 	forwardLen = glm::length(forward);
-	fieldOfView = fieldOfViewIn;
 	speed = speedIn;
+	rotationSpeed = rotationSpeedIn;
+	fieldOfView = fieldOfViewIn;
     setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
     lookAt(position, position + direction, up);
 }
 
-float
-FPS_Camera::Speed() {
+float FPS_Camera::getSpeed() {
 	return speed;
 }
 
-void
-FPS_Camera::setSpeed(float speedIn) {
+void FPS_Camera::setSpeed(float speedIn) {
 	speed = speedIn;
 }
 
-void
-FPS_Camera::move(Direction directionToMove, float distance) {
+float FPS_Camera::getRotationSpeed() {
+	return rotationSpeed;
+}
+
+void FPS_Camera::setRotationSpeed(float rotationSpeedIn) {
+	rotationSpeed = rotationSpeedIn;
+}
+
+void FPS_Camera::move(Direction directionToMove, float distance) {
 	glm::vec3 moveDirection;
 	switch(directionToMove) {
 		case Direction::Forward:
@@ -237,8 +243,7 @@ FPS_Camera::move(Direction directionToMove, float distance) {
 	lookAt(position, position + direction, up);
 }
 
-void
-FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
+void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
     // Note that pitch and yaw are expected to be in degrees
     float pitch = glm::radians(pitchIncrement);
 	// Scale the amount of yaw by the un-normalized length of the forward vector
@@ -276,12 +281,100 @@ FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
     lookAt(position, position + direction, up);
 }
 
-void
-FPS_Camera::zoom(float zoomIncrement) {
+void FPS_Camera::zoom(float zoomIncrement) {
 	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
 	fieldOfView = glm::min(fieldOfView,45.0f); // USE CLASS MAX FOV!!!!!
 	fieldOfView = glm::max(fieldOfView,1.0f);
-	setPerspectiveProjection(fieldOfView,0.1,150); // USE CLASS NEAR & FAR!!!!
+	setPerspectiveProjection(fieldOfView,0.1f,150.0f); // USE CLASS NEAR & FAR!!!!
+}
+
+// FlightCamera Class Method Implementations ==================================
+
+FlightCamera::FlightCamera(): Camera() {
+	position = {0.0, 0.0, 0.0};
+	direction = {0.0, 0.0, -1.0};
+	up = {0.0, 1.0, 0.0};
+	right = glm::cross(direction, up);
+	speed = 1.0f;
+	rotationSpeed = 1.0f;
+	fieldOfView = 45.0f;
+	float nearPlane = 0.1f;
+	float farPlane = 150.0f;
+    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+    lookAt(position, position + direction, up);
+}	
+	
+void FlightCamera::init(glm::vec3 positionIn, glm::vec3 directionIn,
+				  	glm::vec3 upIn, float speedIn, float rotationSpeedIn,
+					float fieldOfViewIn, float nearPlane, float farPlane) {
+	position = positionIn;
+	direction = directionIn;
+	up = upIn;
+	right = glm::cross(direction, up);
+	speed = speedIn;
+	rotationSpeed = rotationSpeedIn;
+	fieldOfView = fieldOfViewIn;
+    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+    lookAt(position, position + direction, up);
+}
+
+float FlightCamera::getSpeed() {
+	return speed;
+}
+
+void FlightCamera::setSpeed(float speedIn) {
+	speed = speedIn;
+}
+
+float FlightCamera::getRotationSpeed() {
+	return rotationSpeed;
+}
+
+void FlightCamera::setRotationSpeed(float rotationSpeedIn) {
+	rotationSpeed = rotationSpeedIn;
+}
+
+void
+FlightCamera::move(float distance) {
+	// Add the movement vector to the camera position
+	position += distance * direction;
+	// Set the camera view transform
+	lookAt(position, position + direction, up);
+}
+
+void
+FlightCamera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
+    // Note that pitch and yaw are expected to be in degrees
+    float pitch = glm::radians(pitchIncrement);
+    float yaw = glm::radians(yawIncrement);
+    // Rotate direction & up vectors according to pitch around cameraRight
+    direction = glm::normalize(direction + glm::tan(pitch)*up);
+    up = glm::cross(right, direction);
+    // Rotate cameraDir & cameraRight according to yaw around cameraUp
+    direction = glm::normalize(direction + glm::tan(yaw)*right);
+    right = glm::cross(direction, up);
+    // Calculate the view transform
+    lookAt(position, position + direction, up);
+}
+
+void
+FlightCamera::roll(float rollIncrement) {
+    // Note that roll is in degrees, and that what the camera sees will
+    // roll in the opposite direction of the camera
+    float roll = glm::radians(rollIncrement);
+    // Rotate up & right vectors according to roll around direction vector
+    up = glm::normalize(up + glm::tan(roll)*right);
+    right = glm::cross(direction, up);
+    // Calculate the view transform (note that direction vector does not change)
+    lookAt(position, position + direction, up);
+}
+
+void
+FlightCamera::zoom(float zoomIncrement) {
+	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
+	fieldOfView = glm::min(fieldOfView,45.0f); // USE CLASS MAX FOV!!!!!
+	fieldOfView = glm::max(fieldOfView,1.0f);
+	setPerspectiveProjection(fieldOfView,0.1f,150.0f); // USE CLASS NEAR & FAR!!!!
 }
 
 }

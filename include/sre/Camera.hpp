@@ -125,16 +125,18 @@ namespace sre {
 // NOTE: NEED TO CHECK MULTIPLE THINGS,
 //		 LIKE SHOULD OVERRIDE THE setPositionandRotation
 //		 and the lookAt and other functions that change the camera
-//		 -- either make them work
-//		 with this class or assert that they can't be called
+//		 -- either make them work with this class or assert that they
+//		 can't be called
     public:
         FPS_Camera();
 		void init(glm::vec3 position, glm::vec3 direction, glm::vec3 worldUp,
-				  float speed, float fieldOfView, float nearPlane = 0.1f,
-				  float farPlane = 150.0f);
+				  float speed, float rotationSpeed, float fieldOfView,
+				  float nearPlane = 0.1f, float farPlane = 150.0f);
 		enum class Direction {Forward, Backward, Left, Right, Up, Down};
-		float Speed();
+		float getSpeed();
 		void setSpeed(float speed);
+		float getRotationSpeed();
+		void setRotationSpeed(float rotationSpeed);
 		// Move the camera in a horizontal (perpendicular to worldUp Direction)
 		virtual void move(Direction direction, float distance);
 		// Change direction camera is pointing according to pitch and yaw
@@ -159,7 +161,41 @@ namespace sre {
 		// Camera speed is distance (in world-space units) covered per second
 		float speed;
 		// Camera rotation speed is in degrees/sec
-		//float cameraRotationSpeed = 
+		float rotationSpeed;
 	};
 
+    class DllExport FlightCamera : public Camera {
+// NOTE: NEED TO CHECK MULTIPLE THINGS,
+//		 LIKE SHOULD OVERRIDE THE setPositionandRotation
+//		 and the lookAt and other functions that change the camera
+//		 -- either make them work with this class or assert that they
+//		 can't be called
+    public:
+        FlightCamera();
+		void init(glm::vec3 position, glm::vec3 direction, glm::vec3 up,
+				  float speed, float rotationSpeed, float fieldOfView,
+				  float nearPlane = 0.1f, float farPlane = 150.0f);
+		float getSpeed();
+		void setSpeed(float speed);
+		float getRotationSpeed();
+		void setRotationSpeed(float rotationSpeed);
+		// Move the camera in the direction it is pointing
+		virtual void move(float distance);
+		// Change direction camera is pointing according to pitch and yaw
+		virtual void pitchAndYaw(float pitchIncrement, float yawIncrement);
+		virtual void roll(float rollIncrement);
+		virtual void zoom(float zoomIncrement);
+	protected:
+		glm::vec3 position;
+		glm::vec3 direction; // Pointing from camera to target
+		glm::vec3 up; // Unit vector perpedicular to direction
+		glm::vec3 right; // Unit vector perpendicular to direction
+		// Camera 'Field of View' in degrees (warped effects start to appear
+		// when the Field of View is > 45.0)
+		float fieldOfView;
+		// Camera speed is distance (in world-space units) covered per second
+		float speed;
+		// Camera rotation speed is in degrees/sec
+		float rotationSpeed;
+	};
 }
