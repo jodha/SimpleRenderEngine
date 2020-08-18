@@ -39,9 +39,9 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 ## Build Instructions
 
-### Ubuntu Linux:
+### Ubuntu Linux
 
-#### Get Ubuntu fully up-to-date:
+#### Upgrade and update Ubuntu
 
 Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ubuntu (this is not necessary, but is recommended) and perform updates until the upgrade is fully up-to-date. Then follow these steps:
 
@@ -49,7 +49,7 @@ Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ub
  * sudo apt update
  * sudo apt autoremove
 
-#### Install compilers and build tools (if not installed already):
+#### Install compilers and build tools (if not installed already)
 
  * sudo apt install g++
  * sudo apt install git
@@ -57,13 +57,13 @@ Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ub
  * sudo apt install cmake
  * sudo apt install cmake-curses-gui (this is optional)
 
-#### Install libraries (if not installed already):
+#### Install libraries (if not installed already)
 
  * sudo apt install libsdl2-dev
  * sudo apt install libsdl2-image-dev
  * sudo apt install libglew-dev
 
-#### Install SRE:
+#### Install SRE
  
 Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
 
@@ -71,7 +71,7 @@ Clone the library and note that all the updates are currently only available on 
  * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
  * git checkout develop2
  * mkdir -p ../sre_build
- * cmake [full-path-to-directory-to-install-into]/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+ * cmake [full-path-of-install-directory]/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
  * cd ../sre_build
  * make
  * cd examples
