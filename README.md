@@ -4,11 +4,11 @@
 
 # SimpleRenderEngine
 
-This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine. The goals of the updates are to make the interface easier to us (e.g. not as dependant on advanced C++11 features like Lambdas) and with less exposure to OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
+This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine. The goals of the updates are to make the interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure to OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
 
-Two new cameras (derived from the base camera) have been added:
-1) A basic First-Person Surveyor (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
-2) A basic Flight camera (demonstrated in 'examples/19_Flight-camera.cpp')
+Two new cameras (derived from the base camera class) have been added:
+1) A basic "First-Person Surveyor" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
+2) A basic "Flight" camera (demonstrated in 'examples/19_Flight-camera.cpp')
 
 The goal of SimpleRenderEngine (sre) is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
  
@@ -39,38 +39,40 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 ## Build Instructions
 
-# Ubuntu Linux:
-First get your Ubuntu installation fully up-to-date. Use Ubuntu GUI to do an upgrade to the latest version of Ubuntu (not necessary, but recommended) and perform any following updates. Then follow these steps::
+### Ubuntu Linux:
+#### First get your Ubuntu installation fully up-to-date.
 
-sudo apt full-upgrade
-sudo apt update
-sudo apt autoremove
+Use Ubuntu GUI to do an upgrade to the latest version of Ubuntu (not necessary, but recommended) and perform any following updates. Then follow these steps::
 
-Install compilers and build tools (if not installed already):
+ * sudo apt full-upgrade
+ * sudo apt update
+ * sudo apt autoremove
 
-sudo apt install g++
-sudo apt install git
-sudo apt install make
-sudo apt install cmake
-sudo apt install cmake-curses-gui
+#### Install compilers and build tools (if not installed already):
 
-Install libraries (if not installed already):
+ * sudo apt install g++
+ * sudo apt install git
+ * sudo apt install make
+ * sudo apt install cmake
+ * sudo apt install cmake-curses-gui
 
-sudo apt install libsdl2-dev
-sudo apt install libsdl2-image-dev
-sudo apt install libglew-dev
+#### Install libraries (if not installed already):
 
-Install SRE:
+ * sudo apt install libsdl2-dev
+ * sudo apt install libsdl2-image-dev
+ * sudo apt install libglew-dev
+
+#### Install SRE:
  
 Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
 
-cd directory-to-install-into 
-git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
-git checkout develop2
-mkdir -p ../sre_build
-cmake full-path-of/directory-to-install-into/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
-cd ../sre_build
-make
+ * cd directory-to-install-into 
+ * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
+ * git checkout develop2
+ * mkdir -p ../sre_build
+ * cmake full-path-of/directory-to-install-into/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+ * cd ../sre_build
+ * make
 
 ## Examples
  
