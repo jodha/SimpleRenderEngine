@@ -4,14 +4,19 @@
 
 # SimpleRenderEngine
 
-The goal of SimpleRenderEngine (sre) is to provide easy way to get started with graphics 
-programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like 
-OpenGL, DirectX and Vulkan.
+This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine. The goals of the updates are to make the interface easier to us (e.g. not as dependant on advanced C++11 features like Lambdas) and with less exposure to OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
+
+Two new cameras (derived from the base camera) have been added:
+1) A basic First-Person Surveyor (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
+2) A basic Flight camera (demonstrated in 'examples/19_Flight-camera.cpp')
+
+The goal of SimpleRenderEngine (sre) is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
  
-SimpleRenderEngine currently depends on Simple Direct Layer 2.x (SDL2), SDL2-image, OpenGL Mathematics (GLM), and OpenGL 
-3.3 (or higher), Dear ImGui and runs on both Windows, macOS and Linux.
+SimpleRenderEngine currently depends on Simple Direct Layer 2.x (SDL2), SDL2-image, OpenGL Mathematics (GLM), and OpenGL 3.3 (or higher), Dear ImGui and runs on Windows, macOS, and Linux.
  
 sre provides:
+ * First-Person Surveyor (e.g. Minecraft-like) camera
+ * Flight camera
  * Virtual camera (perspective and orthographic)
  * Texture support (JPEG, PNG)
  * Cube map support
@@ -32,13 +37,40 @@ To keep sre as simple and flexible as possible the following features are not a 
  * Deferred rendering
  * Dynamic particle systems
 
-## Getting started
+## Build Instructions
 
-First clone the library (`git clone --recurse-submodules https://github.com/mortennobel/SimpleRenderEngine.git`). You can use of the examples as starting point.
+# Ubuntu Linux:
+First get your Ubuntu installation fully up-to-date. Use Ubuntu GUI to do an upgrade to the latest version of Ubuntu (not necessary, but recommended) and perform any following updates. Then follow these steps::
 
-If you want to create new projects using SimpleRenderEngine you can use [SimpleRenderEngineTemplate](https://github.com/mortennobel/SimpleRenderEngineTemplate) as a simple project template. 
+sudo apt full-upgrade
+sudo apt update
+sudo apt autoremove
 
-Also look into [SimpleRenderEngineProject](https://github.com/mortennobel/SimpleRenderEngineProject) as starting point, which bundles all/most dependencies for Windows and macOS.
+Install compilers and build tools (if not installed already):
+
+sudo apt install g++
+sudo apt install git
+sudo apt install make
+sudo apt install cmake
+sudo apt install cmake-curses-gui
+
+Install libraries (if not installed already):
+
+sudo apt install libsdl2-dev
+sudo apt install libsdl2-image-dev
+sudo apt install libglew-dev
+
+Install SRE:
+ 
+Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
+
+cd directory-to-install-into 
+git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
+git checkout develop2
+mkdir -p ../sre_build
+cmake full-path-of/directory-to-install-into/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+cd ../sre_build
+make
 
 ## Examples
  
@@ -48,7 +80,7 @@ Example usage can be found in the examples folder.
 
 ## Documentation
 
-API documentation is defined in header files.
+API documentation is defined in header files, usage is shown in the example files.
  
 ## Other resources
  
@@ -59,4 +91,3 @@ API documentation is defined in header files.
  * https://github.com/ocornut/imgui ImGui 1.60 (submodule)
  * https://github.com/BalazsJako/ImGuiColorTextEdit ImGuiColorTextEdit (bundled as submodule)
  * https://github.com/kazuho/picojson PicoJSON (bundled as submodule)
- 

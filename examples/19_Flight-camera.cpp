@@ -18,11 +18,20 @@
 //#include <cassert>
 
 // Things to do:
-// 2) Place a few new objects from Free3D in the domain
-// 4) Do full "flight" demo for Max (show original camera demo first,
-//		followd by mileposts in development [if Max wants to see that much])
-// 5) Test on port to Windows and new Linux computer
-// 6) Scale movement (both keyboard and mouse) by frame rate
+// 1) Write up installation notes
+// 2) Change name of "withLocation" to "withTranslation", other location uses
+// 3) Change name of "withScale" to "withScaling"
+// 3) Clean up camera class
+//		a) Move duplicate FPS & Flight camera code to base class
+//		b) Try to pull out part of yaw & pitch function to base class
+//		c) Handle other calls to camera class to make sure they don't conflict
+//		   with the FPS and Flight camera
+// 4) Add a "withRotation" and "setRotation" to the mesh class 
+// 5) Add vertexes to the cube primitive faces to see if it fixes reflection
+// 6) Test on port to Windows and new Linux computer
+// 7) Place a few new objects from Free3D in the domain (with Max)
+// 8) Fix camera movement (Max, with some help)
+// 9) Scale camera movement (both keyboard and mouse) by frame rate (with Max)
 
 using namespace sre;
 using namespace glm;

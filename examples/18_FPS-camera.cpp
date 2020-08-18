@@ -17,13 +17,6 @@
 // Needed the following (remove later) to assert a camera condition
 //#include <cassert>
 
-// Things to do:
-// 2) Place a few new objects from Free3D in the domain
-// 4) Do full "flight" demo for Max (show original camera demo first,
-//		followd by mileposts in development [if Max wants to see that much])
-// 5) Test on port to Windows and new Linux computer
-// 6) Scale movement (both keyboard and mouse) by frame rate
-
 using namespace sre;
 using namespace glm;
 
