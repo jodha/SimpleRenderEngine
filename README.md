@@ -41,9 +41,9 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 ### Ubuntu Linux:
 
-#### First get your Ubuntu installation fully up-to-date:
+#### Get Ubuntu fully up-to-date:
 
-Use the Ubuntu user-interface to do an upgrade to the latest version of Ubuntu (this is not necessary, but is recommended) and perform updates until the upgrade is fully up-to-date. Then follow these steps::
+Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ubuntu (this is not necessary, but is recommended) and perform updates until the upgrade is fully up-to-date. Then follow these steps:
 
  * sudo apt full-upgrade
  * sudo apt update
@@ -55,7 +55,7 @@ Use the Ubuntu user-interface to do an upgrade to the latest version of Ubuntu (
  * sudo apt install git
  * sudo apt install make
  * sudo apt install cmake
- * sudo apt install cmake-curses-gui
+ * sudo apt install cmake-curses-gui (this is optional)
 
 #### Install libraries (if not installed already):
 
@@ -67,11 +67,11 @@ Use the Ubuntu user-interface to do an upgrade to the latest version of Ubuntu (
  
 Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
 
- * cd directory-to-install-into 
+ * cd [directory-to-install-into] 
  * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
  * git checkout develop2
  * mkdir -p ../sre_build
- * cmake full-path-to/directory-to-install-into/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+ * cmake [full-path-to-directory-to-install-into]/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
  * cd ../sre_build
  * make
  * cd examples
