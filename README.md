@@ -4,7 +4,7 @@
 
 # SimpleRenderEngine
 
-This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). Intent of the updates are to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
+This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). The intent of the updates is to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct use of transformation matrices). Several build issues have also been fixed.
 
 Two new cameras (derived from the basic virtual camera) have been added:
 1) A basic "First-Person Surveyor" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
