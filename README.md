@@ -4,20 +4,20 @@
 
 # SimpleRenderEngine
 
-This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine. The goals of the updates are to make the interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure to OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
+This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). Intent of the updates are to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct reliance on transformation matrices). Several build issues have also been fixed.
 
-Two new cameras (derived from the base camera class) have been added:
+Two new cameras (derived from the basic virtual camera) have been added:
 1) A basic "First-Person Surveyor" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
 2) A basic "Flight" camera (demonstrated in 'examples/19_Flight-camera.cpp')
 
-The goal of SimpleRenderEngine (sre) is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
+The goal of SimpleRenderEngine is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
  
 SimpleRenderEngine currently depends on Simple Direct Layer 2.x (SDL2), SDL2-image, OpenGL Mathematics (GLM), and OpenGL 3.3 (or higher), Dear ImGui and runs on Windows, macOS, and Linux.
  
 sre provides:
- * First-Person Surveyor (e.g. Minecraft-like) camera
- * Flight camera
- * Virtual camera (perspective and orthographic)
+ * First-Person Surveyor (e.g. Minecraft-like) virtual camera
+ * Flight virtual camera
+ * Basic virtual camera (perspective and orthographic)
  * Texture support (JPEG, PNG)
  * Cube map support
  * Mesh support (with custom vertex attributes)
@@ -41,9 +41,9 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 ### Ubuntu Linux
 
-#### Upgrade and update Ubuntu
+#### Update Ubuntu
 
-Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ubuntu (this is not necessary, but is recommended) and perform updates until the upgrade is fully up-to-date. Then follow these steps:
+Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. Then take these steps:
 
  * sudo apt full-upgrade
  * sudo apt update
@@ -63,24 +63,26 @@ Use the Ubuntu 'Software Updater' utility to upgrade to the latest version of Ub
  * sudo apt install libsdl2-image-dev
  * sudo apt install libglew-dev
 
-#### Install SRE
+#### Install sre
  
 Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
 
  * cd [directory-to-install-into] 
- * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
+ * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre)
+ * cd sre
+ * pwd (Note: use this to get the full-path-of-install-directory used below)
  * git checkout develop2
- * mkdir -p ../sre_build
- * cmake [full-path-of-install-directory]/sre -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+ * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
  * cd ../sre_build
+ * cmake [full-path-of-install-directory] -DOpenGL_GL_PREFERENCE:TYPE=GLVND
  * make
  * cd examples
  * ./SRE-Example-00_hello-engine
- * try other examples
+ * Try other examples
 
 ## Examples
  
-Example usage can be found in the examples folder.
+Examples (in the examples folder).
 
 [![Matcap](https://mortennobel.github.io/SimpleRenderEngine/examples/07_matcap.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/07_matcap.html)[![Picking](https://mortennobel.github.io/SimpleRenderEngine/examples/09_picking.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/09_picking.html)[![Skybox](https://mortennobel.github.io/SimpleRenderEngine/examples/10_skybox-example.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/10_skybox-example.html)[![Render to texture](https://mortennobel.github.io/SimpleRenderEngine/examples/12_render-to-texture.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/12_render-to-texture.html)[![Cloth_Simulation](https://mortennobel.github.io/SimpleRenderEngine/examples/15_cloth_simulation.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/15_cloth_simulation.html)[![Shadows](https://mortennobel.github.io/SimpleRenderEngine/examples/16_shadows.png)](https://mortennobel.github.io/SimpleRenderEngine/examples/16_shadows.html)[![GLSL Editor](https://mortennobel.github.io/SimpleRenderEngine/examples/glsl_editor.png)](https://github.com/mortennobel/sre_glsl_editor)[![Platformer](https://mortennobel.github.io/SimpleRenderEngine/examples/platformer.png)](https://github.com/mortennobel/SimpleRenderEngineProject/tree/master/project/platformer)[![Particle system](https://mortennobel.github.io/SimpleRenderEngine/examples/particle-system.png)](https://github.com/mortennobel/SimpleRenderEngineProject/tree/master/project/particle_system)[![ImGUI integration](https://mortennobel.github.io/SimpleRenderEngine/examples/gui.png)](https://github.com/mortennobel/SimpleRenderEngineProject/tree/master/project/gui)
 
