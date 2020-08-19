@@ -18,17 +18,15 @@
 //#include <cassert>
 
 // Things to do:
-// 1) Write up installation notes
-// 2) Change name of "withLocation" to "withTranslation", other location uses
-// 3) Change name of "withScale" to "withScaling"
-// 3) Clean up camera class
+// 1) Clean up camera class
 //		a) Move duplicate FPS & Flight camera code to base class
 //		b) Try to pull out part of yaw & pitch function to base class
 //		c) Handle other calls to camera class to make sure they don't conflict
 //		   with the FPS and Flight camera
-// 4) Add a "withRotation" and "setRotation" to the mesh class 
+// 2) Change RenderPass draw from a <shared_ptr>& to <shared_ptr>&&,
+//	  and then directly pass shared_ptr_from_this in Mesh.cpp
 // 5) Add vertexes to the cube primitive faces to see if it fixes reflection
-// 6) Test on port to Windows and new Linux computer
+// 6) Test on port to Windows and Mac
 // 7) Place a few new objects from Free3D in the domain (with Max)
 // 8) Fix camera movement (Max, with some help)
 // 9) Scale camera movement (both keyboard and mouse) by frame rate (with Max)
@@ -107,7 +105,7 @@ int main() {
     gridPlaneTop = Mesh::create()
 					.withWirePlane(30) // 30 intervals 
 					.withLocation({0.0f, 20.0f * worldUnit, 0.0f})
-					.withScale(75.0f * worldUnit)
+					.withScaling(75.0f * worldUnit)
 					.withMaterial(gridPlaneTopMaterial)
 					.build();
 
@@ -117,7 +115,7 @@ int main() {
     gridPlaneBottom = Mesh::create()
 					.withWirePlane(30) // 30 intervals 
 					.withLocation({0.0f, -20.0f * worldUnit, 0.0f})
-					.withScale(75.0f * worldUnit)
+					.withScaling(75.0f * worldUnit)
 					.withMaterial(gridPlaneBottomMaterial)
 					.build();
 
@@ -130,7 +128,9 @@ int main() {
     torus = Mesh::create()
 					.withTorus(segmentsC, segmentsA)
 					.withLocation({0.0f, 0.0f, 0.0f})
-					.withScale(2.5f * worldUnit)
+					.withRotation({45.0f, 45.0f, 0.0f})
+					.withScaling({3.0f * worldUnit, 2.0f * worldUnit,
+													1.0f * worldUnit})
 					.withMaterial(torusMaterial)
 					.build();
 
@@ -143,7 +143,7 @@ int main() {
     sphere = Mesh::create()
 					.withSphere(stacks, slices)
 					.withLocation({-20.0f * worldUnit, 0.0f, 0.0f})
-					.withScale(worldUnit)
+					.withScaling(worldUnit)
 					.withMaterial(sphereMaterial)
 					.build();
 
@@ -153,7 +153,8 @@ int main() {
     SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
 	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
 	Suzanne->setLocation({20.0f * worldUnit, 0.0f, 0.0f});
-	Suzanne->setScale(worldUnit);
+	Suzanne->setRotation({0.0f, -45.0f, 0.0f});
+	Suzanne->setScaling(worldUnit);
 	Suzanne->setMaterial(SuzanneMaterial);
 
 	// Capture the mouse (mouse won't be visible)
@@ -172,7 +173,7 @@ int main() {
 // Update the rendering frame (move the sphere)
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
-	glm::vec3 sphereLocation = sphere->Location();	
+	glm::vec3 sphereLocation = sphere->getLocation();	
 	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };

@@ -91,7 +91,7 @@ int main() {
     gridPlaneTop = Mesh::create()
 					.withWirePlane(30) // 30 intervals 
 					.withLocation({0.0f, 20.0f * worldUnit, 0.0f})
-					.withScale(75.0f * worldUnit)
+					.withScaling(75.0f * worldUnit)
 					.withMaterial(gridPlaneTopMaterial)
 					.build();
 
@@ -101,7 +101,7 @@ int main() {
     gridPlaneBottom = Mesh::create()
 					.withWirePlane(30) // 30 intervals 
 					.withLocation({0.0f, -20.0f * worldUnit, 0.0f})
-					.withScale(75.0f * worldUnit)
+					.withScaling(75.0f * worldUnit)
 					.withMaterial(gridPlaneBottomMaterial)
 					.build();
 
@@ -114,7 +114,9 @@ int main() {
     torus = Mesh::create()
 					.withTorus(segmentsC, segmentsA)
 					.withLocation({0.0f, 0.0f, 0.0f})
-					.withScale(2.5f * worldUnit)
+					.withRotation({45.0f, 45.0f, 0.0f})
+					.withScaling({3.0f * worldUnit, 2.0f * worldUnit,
+													1.0f * worldUnit})
 					.withMaterial(torusMaterial)
 					.build();
 
@@ -127,7 +129,7 @@ int main() {
     sphere = Mesh::create()
 					.withSphere(stacks, slices)
 					.withLocation({-20.0f * worldUnit, 0.0f, 0.0f})
-					.withScale(worldUnit)
+					.withScaling(worldUnit)
 					.withMaterial(sphereMaterial)
 					.build();
 
@@ -137,7 +139,8 @@ int main() {
     SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
 	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
 	Suzanne->setLocation({20.0f * worldUnit, 0.0f, 0.0f});
-	Suzanne->setScale(worldUnit);
+	Suzanne->setRotation({0.0f, -45.0f, 0.0f});
+	Suzanne->setScaling(worldUnit);
 	Suzanne->setMaterial(SuzanneMaterial);
 
 	// Capture the mouse (mouse won't be visible)
@@ -156,7 +159,7 @@ int main() {
 // Update the rendering frame (move the sphere)
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
-	glm::vec3 sphereLocation = sphere->Location();	
+	glm::vec3 sphereLocation = sphere->getLocation();	
 	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };

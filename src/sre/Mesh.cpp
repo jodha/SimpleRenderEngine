@@ -14,6 +14,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <iomanip>
 #include <sstream>
 #include "sre/Renderer.hpp"
@@ -28,7 +29,7 @@ class Material;
 namespace sre {
     uint16_t Mesh::meshIdCount = 0;
 
-    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 scaleIn, std::shared_ptr<Material> materialIn) : location(locationIn), scale(scaleIn), material(materialIn)
+    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn)
     {
         meshId = meshIdCount++;
         if ( Renderer::instance == nullptr){
@@ -43,7 +44,11 @@ namespace sre {
                std::move(indices),
                meshTopology,
                name,
-               renderStats);
+               renderStats,
+			   locationIn,
+			   rotationIn,
+			   scalingIn,
+			   materialIn);
         Renderer::instance->meshes.emplace_back(this);
     }
 
@@ -105,7 +110,7 @@ namespace sre {
         return vertexCount;
     }
 
-    void Mesh::update(std::map<std::string,std::vector<float>>&& attributesFloat,std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string,std::vector<glm::vec3>>&& attributesVec3,std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::ivec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats) {
+    void Mesh::update(std::map<std::string,std::vector<float>>&& attributesFloat,std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string,std::vector<glm::vec3>>&& attributesVec3,std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::ivec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn) {
         this->meshTopology = meshTopology;
         this->name = name;
         meshId = meshIdCount++;
@@ -151,6 +156,11 @@ namespace sre {
 
         renderStats.meshBytes += dataSize;
         renderStats.meshBytesAllocated += dataSize;
+
+		location = locationIn;
+		rotation = rotationIn;
+		scaling = scalingIn;
+		material = materialIn;
     }
 
     void Mesh::updateIndexBuffers() {
@@ -335,20 +345,24 @@ namespace sre {
         return dataSize;
     }
 
-	void Mesh::setLocation(glm::vec3 newLocation) {
-		location = newLocation;
-	}
-
-	glm::vec3 Mesh::Location() {
+	glm::vec3 Mesh::getLocation() {
 		return location;
 	}
 
-	void Mesh::setScale(glm::vec3 newDirectionalScale) {
-		scale = newDirectionalScale;
+	void Mesh::setLocation(glm::vec3 locationIn) {
+		location = locationIn;
 	}
 
-	void Mesh::setScale(float newScale) {
-		scale = glm::vec3(newScale, newScale, newScale);
+	void Mesh::setRotation(glm::vec3 rotationIn) {
+		rotation = glm::radians(rotationIn);
+	}
+
+	void Mesh::setScaling(glm::vec3 newDirectionalScaling) {
+		scaling = newDirectionalScaling;
+	}
+
+	void Mesh::setScaling(float newScaling) {
+		scaling = glm::vec3(newScaling, newScaling, newScaling);
 	}
 
 	void Mesh::setMaterial(std::shared_ptr<Material> newMaterial)	{
@@ -357,7 +371,10 @@ namespace sre {
 
 	void Mesh::draw(RenderPass& rp) {
 		std::shared_ptr<Mesh> thisMesh = shared_from_this();	
-		rp.draw(thisMesh, glm::translate(location)*glm::scale(scale), material);
+		rp.draw(thisMesh, glm::translate(location)
+						  * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+						  * glm::scale(scaling),
+						  material);
 	}
 
     std::array<glm::vec3,2> Mesh::getBoundsMinMax() {
@@ -499,13 +516,18 @@ namespace sre {
 		return *this;
 	}
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withScale(glm::vec3 directionalScaleIn) {
-		scale = directionalScaleIn;
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withRotation(glm::vec3 rotationIn) {
+		rotation = glm::radians(rotationIn);
 		return *this;
 	}
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withScale(float scaleIn) {
-		scale = glm::vec3(scaleIn, scaleIn, scaleIn);
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(glm::vec3 directionalScalingIn) {
+		scaling = directionalScalingIn;
+		return *this;
+	}
+
+	Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(float scalingIn) {
+		scaling = glm::vec3(scalingIn, scalingIn, scalingIn);
 		return *this;
 	}
 
@@ -737,13 +759,13 @@ namespace sre {
         }
         if (updateMesh != nullptr){
             renderStats.meshBytes -= updateMesh->getDataSize();
-            updateMesh->update(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices), meshTopology,name,renderStats);
+            updateMesh->update(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices), meshTopology,name,renderStats, location, rotation, scaling, material);
 
 
             return updateMesh->shared_from_this();
         }
 
-        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology,name,renderStats, location, scale, material);
+        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology,name,renderStats, location, rotation, scaling, material);
         renderStats.meshCount++;
 
         return std::shared_ptr<Mesh>(res);

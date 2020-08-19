@@ -56,10 +56,11 @@ namespace sre {
                                                                                                 // Creates a torus in xy plane. C is in the outer (large) circle, A is the sweeping circle.
             
 			// properties
-			MeshBuilder& withLocation(glm::vec3 locationIn);									// Stores a world space location for RenderPass draw
-			MeshBuilder& withScale(glm::vec3 directionalScaleIn);         						// Stores a world space x, y, z scale for RenderPass draw
-			MeshBuilder& withScale(float scaleIn);         										// Stores a world space scale for RenderPass draw
-			MeshBuilder& withMaterial(std::shared_ptr<Material> materialIn);               		// Stores a material for RenderPass draw 
+			MeshBuilder& withLocation(glm::vec3 locationIn);									// World space location of the mesh for RenderPass (RP) draw
+			MeshBuilder& withRotation(glm::vec3 rotation);										// World space x, y, z rotation in Euler angles for RP draw
+			MeshBuilder& withScaling(glm::vec3 directionalScalingIn);         					// World space x, y, z scaling for RP draw
+			MeshBuilder& withScaling(float scalingIn);         									// World space uniform scaling for RP draw
+			MeshBuilder& withMaterial(std::shared_ptr<Material> materialIn);               		// Material for RenderPass draw 
 
             // raw data
             MeshBuilder& withPositions(const std::vector<glm::vec3> &vertexPositions);          // Set vertex attribute "position" of type vec3
@@ -103,7 +104,8 @@ namespace sre {
             bool recomputeTangents = false;
             std::string name;
 			glm::vec3 location {0.0f, 0.0f, 0.0f};
-			glm::vec3 scale {1.0f, 1.0f, 1.0f};
+			glm::vec3 rotation {0.0f, 0.0f, 0.0f};
+			glm::vec3 scaling {1.0f, 1.0f, 1.0f};
 			std::shared_ptr<Material> material {nullptr};
             friend class Mesh;
         };
@@ -141,10 +143,11 @@ namespace sre {
 
         int getDataSize();                                          // get size of the mesh in bytes on GPU
 
-		glm::vec3 Location();										// Get the location (the center of the bounding box) of the mesh
-		void setLocation(glm::vec3 newLocation);					// Set the location (the center of the bounding box) of the mesh
-		void setScale(glm::vec3 newDirectionalScale);				// Scale the mesh with different amounts in x, y, and z directions
-		void setScale(float newScale);								// Scale the mesh in the same amount in all directions
+		glm::vec3 getLocation();									// Get the location of the mesh
+		void setLocation(glm::vec3 newLocation);					// Set the location of the mesh
+		void setRotation(glm::vec3 newRotation);					// Set the rotation of the mesh using x, y, z Euler angles
+		void setScaling(glm::vec3 newDirectionalScaling);			// Scale the mesh in different amounts in x, y, and z directions
+		void setScaling(float newScaling);							// Scale the mesh in the same amount in all directions
 		void setMaterial(std::shared_ptr<Material> newMaterial);	// Set the material for the mesh
 		void draw(RenderPass& renderPass);							// Draw the mesh using renderPass
     private:
@@ -162,9 +165,8 @@ namespace sre {
             uint32_t type;
         };
 
-        Mesh       (std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 scaleIn, std::shared_ptr<Material> materialIn);
-        void update(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats);
-// location, scale, and material need to be added to update function!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Mesh       (std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn);
+        void update(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn);
 
         void updateIndexBuffers();
         std::vector<float> getInterleavedData();
@@ -206,7 +208,8 @@ namespace sre {
         bool hasAttribute(std::string name);
 
 		glm::vec3 location {0.0f, 0.0f, 0.0f};
-		glm::vec3 scale {1.0f, 1.0f, 1.0f};
+		glm::vec3 rotation {0.0f, 0.0f, 0.0f};
+		glm::vec3 scaling {1.0f, 1.0f, 1.0f};
 		std::shared_ptr<Material> material {nullptr};
     };
 
