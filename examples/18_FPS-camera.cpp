@@ -67,12 +67,22 @@ int main() {
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
 	float rotationSpeed = 5.0f; // 5 degrees / second
 	float fieldOfView= 45.0f;
-	camera.init(position,direction,worldUp, speed,rotationSpeed,fieldOfView);
+//	camera.init(position,direction,worldUp, speed,rotationSpeed,fieldOfView);
 //	camera.init({0.0f, 0.0f, 10.0f * worldUnit}, // position
 //				{0.0f, 0.0f, -1.0f}, // direction
 //				{0.0f, 1.0f,  0.0f}, // worldUp
 //				2.0f * worldUnit, 5.0f, // speed, rotationSpeed
 //				45.0f)  // fieldOfView
+	camera = FPS_Camera::create()
+				.withPosition(position)
+				.withDirection(direction)
+				.withUpDirection(worldUp)
+				.withWorldUpDirection(worldUp)
+				.withSpeed(speed)
+				.withRotationSpeed(rotationSpeed)
+				.withFieldOfView(fieldOfView)
+				.withFarPlane(150.0f)
+				.build();
 
 	// Create lighting
     worldLights.setAmbientLight({0.05f, 0.05f, 0.05f});
@@ -206,22 +216,22 @@ void keyEvent(SDL_Event& event) {
 			float distance = camera.getSpeed() * 1.0/5.0;
 			if (key == SDLK_w || key == SDLK_k || key == SDLK_UP) {
 				// Move camera forward in horizontal plane towards target
-				camera.move(FPS_Camera::Direction::Forward, distance);
+				camera.move(distance, FPS_Camera::Direction::Forward);
 			} else if (key == SDLK_s || key == SDLK_j || key == SDLK_DOWN) {
 				// Move camera backward in horizontal plane away from target
-				camera.move(FPS_Camera::Direction::Backward, distance);
+				camera.move(distance, FPS_Camera::Direction::Backward);
 			} else if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT) {
 				// Move camera (strafe) left
-				camera.move(FPS_Camera::Direction::Left, distance);
+				camera.move(distance, FPS_Camera::Direction::Left);
 			} else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
 				// Move camera (strafe) right
-				camera.move(FPS_Camera::Direction::Right, distance);
+				camera.move(distance, FPS_Camera::Direction::Right);
 			} else if (key == SDLK_SPACE) {		// Minecraft uses LCTRL || SPACE
 				// Move camera up vertically 
-				camera.move(FPS_Camera::Direction::Up, distance);
+				camera.move(distance, FPS_Camera::Direction::Up);
 			} else if (key == SDLK_z) {   		// Minecraft uses LSHIFT
 				// Move camera down vertically	// Max uses  LCTRL
-				camera.move(FPS_Camera::Direction::Down, distance);
+				camera.move(distance, FPS_Camera::Direction::Down);
 			}
 		}
 	}

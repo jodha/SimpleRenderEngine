@@ -23,6 +23,8 @@
 //		b) Try to pull out part of yaw & pitch function to base class
 //		c) Handle other calls to camera class to make sure they don't conflict
 //		   with the FPS and Flight camera
+// 1.5) Change Mesh::draw to use EulerAngleXYZ
+// 1.7) Use unique_ptr or shared_ptr in Camera builders and light builder
 // 2) Change RenderPass draw from a <shared_ptr>& to <shared_ptr>&&,
 //	  and then directly pass shared_ptr_from_this in Mesh.cpp
 // 5) Add vertexes to the cube primitive faces to see if it fixes reflection
@@ -81,12 +83,21 @@ int main() {
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
 	float rotationSpeed = 5.0f; // 5 degrees / second
 	float fieldOfView= 45.0f;
-	camera.init(position,direction,up, speed,rotationSpeed,fieldOfView);
+//	camera.init(position,direction,up, speed,rotationSpeed,fieldOfView);
 //	camera.init({0.0f, 0.0f, 10.0f * worldUnit}, // position
 //				{0.0f, 0.0f, -1.0f}, // direction
 //				{0.0f, 1.0f,  0.0f}, // up
 //				2.0f * worldUnit, 5.0f, // speed, rotationSpeed
 //				45.0f)  // fieldOfView
+	camera = FlightCamera::create()
+				.withPosition(position)
+				.withDirection(direction)
+				.withUpDirection(up)
+				.withSpeed(speed)
+				.withRotationSpeed(rotationSpeed)
+				.withFieldOfView(fieldOfView)
+				.withFarPlane(150.0f)
+				.build();
 
 	// Create lighting
     worldLights.setAmbientLight({0.05f, 0.05f, 0.05f});

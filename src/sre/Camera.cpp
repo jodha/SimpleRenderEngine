@@ -162,59 +162,214 @@ namespace sre {
 
     }
 
-// FPS_Camera Class Method Implementations =====================================
+// CustomCamera Class Method Implementations ==================================
 
-FPS_Camera::FPS_Camera(): Camera() {
-	position = {0.0, 0.0, 0.0};
-	direction = {0.0, 0.0, -1.0};
-	worldUp = {0.0, 1.0, 0.0};
-	up = worldUp;
-	right = glm::cross(direction, up);
-	forward = direction - glm::dot(direction, worldUp) * worldUp;
-	forwardLen = glm::length(forward);
-	speed = 1.0;
-	rotationSpeed = 1.0;
-	fieldOfView = 45.0;
-	float nearPlane = 0.1f;
-	float farPlane = 150.0f;
-    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
-    lookAt(position, position + direction, up);
+CustomCamera::CustomCamera():Camera(),
+							 position {0.0, 0.0, 0.0},
+							 direction {0.0, 0.0, -1.0},
+							 up {0.0, 1.0, 0.0},
+							 speed {1.0f},
+							 rotationSpeed {1.0f},
+							 fieldOfView {45.0f},
+							 nearPlane {0.1f},
+							 farPlane {100.0f} {
+	maxFieldOfView = fieldOfView;
 }	
 	
-void FPS_Camera::init(glm::vec3 positionIn, glm::vec3 directionIn,
-				  	glm::vec3 worldUpIn, float speedIn, float rotationSpeedIn,
-					float fieldOfViewIn, float nearPlane, float farPlane) {
-	position = positionIn;
-	direction = directionIn;
-	worldUp = worldUpIn;
-	up = worldUp;
+void CustomCamera::init() {
+	direction = glm::normalize(direction);
+	up = glm::normalize(up);
 	right = glm::cross(direction, up);
-	forward = direction - glm::dot(direction, worldUp) * worldUp;
-	forwardLen = glm::length(forward);
-	speed = speedIn;
-	rotationSpeed = rotationSpeedIn;
-	fieldOfView = fieldOfViewIn;
     setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
     lookAt(position, position + direction, up);
 }
 
-float FPS_Camera::getSpeed() {
+float CustomCamera::getSpeed() {
 	return speed;
 }
 
-void FPS_Camera::setSpeed(float speedIn) {
+void CustomCamera::setSpeed(float speedIn) {
 	speed = speedIn;
 }
 
-float FPS_Camera::getRotationSpeed() {
+float CustomCamera::getRotationSpeed() {
 	return rotationSpeed;
 }
 
-void FPS_Camera::setRotationSpeed(float rotationSpeedIn) {
+void CustomCamera::setRotationSpeed(float rotationSpeedIn) {
 	rotationSpeed = rotationSpeedIn;
 }
 
-void FPS_Camera::move(Direction directionToMove, float distance) {
+float CustomCamera::getFieldOfView() {
+	return fieldOfView;
+}
+
+void CustomCamera::setFieldOfView(float fieldOfViewIn) {
+	fieldOfView = fieldOfViewIn;
+}
+
+float CustomCamera::getMaxFieldOfView() {
+	return maxFieldOfView;
+}
+
+void CustomCamera::setMaxFieldOfView(float maxFieldOfViewIn) {
+	maxFieldOfView = maxFieldOfViewIn;
+}
+
+float CustomCamera::getNearPlane() {
+	return nearPlane;
+}
+
+void CustomCamera::setNearPlane(float nearPlaneIn) {
+	nearPlane = nearPlaneIn;
+}
+
+float CustomCamera::getFarPlane() {
+	return farPlane;
+}
+
+void CustomCamera::setFarPlane(float farPlaneIn) {
+	farPlane = farPlaneIn;
+}
+
+void CustomCamera::zoom(float zoomIncrement) {
+	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
+	fieldOfView = glm::min(fieldOfView, maxFieldOfView);
+	fieldOfView = glm::max(fieldOfView, 1.0f);
+	setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+}
+
+// FlightCamera Class Method Implementations ==================================
+
+FlightCamera::FlightCamera(): CustomCamera() {
+}	
+	
+void
+FlightCamera::move(float distance) {
+	// Add the movement vector to the camera position
+	position += distance * direction;
+	// Set the camera view transform
+	lookAt(position, position + direction, up);
+}
+
+void
+FlightCamera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
+    // Note that pitch and yaw are expected to be in degrees
+    float pitch = glm::radians(pitchIncrement);
+    float yaw = glm::radians(yawIncrement);
+    // Rotate direction & up vectors according to pitch around cameraRight
+    direction = glm::normalize(direction + glm::tan(pitch)*up);
+    up = glm::cross(right, direction);
+    // Rotate cameraDir & cameraRight according to yaw around cameraUp
+    direction = glm::normalize(direction + glm::tan(yaw)*right);
+    right = glm::cross(direction, up);
+    // Calculate the view transform
+    lookAt(position, position + direction, up);
+}
+
+void
+FlightCamera::roll(float rollIncrement) {
+    // Note that roll is in degrees, and that what the camera sees will
+    // roll in the opposite direction of the camera
+    float roll = glm::radians(rollIncrement);
+    // Rotate up & right vectors according to roll around direction vector
+    up = glm::normalize(up + glm::tan(roll)*right);
+    right = glm::cross(direction, up);
+    // Calculate the view transform (note that direction vector does not change)
+    lookAt(position, position + direction, up);
+}
+
+FlightCamera::FlightCameraBuilder FlightCamera::create() {
+	return FlightCameraBuilder();
+}
+
+FlightCamera::FlightCameraBuilder::FlightCameraBuilder()
+{
+	camera = new FlightCamera();
+}
+
+FlightCamera::FlightCameraBuilder::~FlightCameraBuilder()
+{
+	delete camera;
+}
+
+FlightCamera FlightCamera::FlightCameraBuilder::build() {
+	camera->init();
+	FlightCamera copyOfCamera = *camera;
+	return copyOfCamera;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withPosition(glm::vec3 position) {
+	camera->position = position;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withDirection(glm::vec3 direction) {
+	camera->direction = direction;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withUpDirection(glm::vec3 upDirection) {
+	camera->up = upDirection;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withSpeed(float speed) {
+	camera->speed = speed;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withRotationSpeed(float rotationSpeed) {
+	camera->rotationSpeed = rotationSpeed;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withFieldOfView(float fieldOfView) {
+	camera->fieldOfView = fieldOfView;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withMaxFieldOfView(float maxFieldOfView) {
+	camera->maxFieldOfView = maxFieldOfView;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withNearPlane(float nearPlane) {
+	camera->nearPlane = nearPlane;
+	return *this;
+}
+
+FlightCamera::FlightCameraBuilder&
+FlightCamera::FlightCameraBuilder::withFarPlane(float farPlane) {
+	camera->farPlane = farPlane;	
+	return *this;
+}
+
+// FPS_Camera Class Method Implementations =====================================
+
+FPS_Camera::FPS_Camera(): CustomCamera() {
+}	
+	
+void FPS_Camera::init() {
+	direction = glm::normalize(direction);
+	up = glm::normalize(up);
+	worldUp = up;
+	right = glm::cross(direction, up);
+	forward = direction - glm::dot(direction, worldUp) * worldUp;
+	forwardLen = glm::length(forward);
+	forward = glm::normalize(forward);
+	CustomCamera::init();
+}
+
+void FPS_Camera::move(float distance, Direction directionToMove) {
 	glm::vec3 moveDirection;
 	switch(directionToMove) {
 		case Direction::Forward:
@@ -281,100 +436,84 @@ void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
     lookAt(position, position + direction, up);
 }
 
-void FPS_Camera::zoom(float zoomIncrement) {
-	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
-	fieldOfView = glm::min(fieldOfView,45.0f); // USE CLASS MAX FOV!!!!!
-	fieldOfView = glm::max(fieldOfView,1.0f);
-	setPerspectiveProjection(fieldOfView,0.1f,150.0f); // USE CLASS NEAR & FAR!!!!
+FPS_Camera::FPS_CameraBuilder FPS_Camera::create() {
+	return FPS_CameraBuilder();
 }
 
-// FlightCamera Class Method Implementations ==================================
-
-FlightCamera::FlightCamera(): Camera() {
-	position = {0.0, 0.0, 0.0};
-	direction = {0.0, 0.0, -1.0};
-	up = {0.0, 1.0, 0.0};
-	right = glm::cross(direction, up);
-	speed = 1.0f;
-	rotationSpeed = 1.0f;
-	fieldOfView = 45.0f;
-	float nearPlane = 0.1f;
-	float farPlane = 150.0f;
-    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
-    lookAt(position, position + direction, up);
-}	
-	
-void FlightCamera::init(glm::vec3 positionIn, glm::vec3 directionIn,
-				  	glm::vec3 upIn, float speedIn, float rotationSpeedIn,
-					float fieldOfViewIn, float nearPlane, float farPlane) {
-	position = positionIn;
-	direction = directionIn;
-	up = upIn;
-	right = glm::cross(direction, up);
-	speed = speedIn;
-	rotationSpeed = rotationSpeedIn;
-	fieldOfView = fieldOfViewIn;
-    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
-    lookAt(position, position + direction, up);
+FPS_Camera::FPS_CameraBuilder::FPS_CameraBuilder()
+{
+	camera = new FPS_Camera();
 }
 
-float FlightCamera::getSpeed() {
-	return speed;
+FPS_Camera::FPS_CameraBuilder::~FPS_CameraBuilder()
+{
+	delete camera;
 }
 
-void FlightCamera::setSpeed(float speedIn) {
-	speed = speedIn;
+FPS_Camera FPS_Camera::FPS_CameraBuilder::build() {
+	camera->init();
+	FPS_Camera copyOfCamera = *camera;
+	return copyOfCamera;
 }
 
-float FlightCamera::getRotationSpeed() {
-	return rotationSpeed;
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withPosition(glm::vec3 position) {
+	camera->position = position;
+	return *this;
 }
 
-void FlightCamera::setRotationSpeed(float rotationSpeedIn) {
-	rotationSpeed = rotationSpeedIn;
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withDirection(glm::vec3 direction) {
+	camera->direction = direction;
+	return *this;
 }
 
-void
-FlightCamera::move(float distance) {
-	// Add the movement vector to the camera position
-	position += distance * direction;
-	// Set the camera view transform
-	lookAt(position, position + direction, up);
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withUpDirection(glm::vec3 upDirection) {
+	camera->up = upDirection;
+	return *this;
 }
 
-void
-FlightCamera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
-    // Note that pitch and yaw are expected to be in degrees
-    float pitch = glm::radians(pitchIncrement);
-    float yaw = glm::radians(yawIncrement);
-    // Rotate direction & up vectors according to pitch around cameraRight
-    direction = glm::normalize(direction + glm::tan(pitch)*up);
-    up = glm::cross(right, direction);
-    // Rotate cameraDir & cameraRight according to yaw around cameraUp
-    direction = glm::normalize(direction + glm::tan(yaw)*right);
-    right = glm::cross(direction, up);
-    // Calculate the view transform
-    lookAt(position, position + direction, up);
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withWorldUpDirection(glm::vec3 worldUp) {
+	camera->worldUp = worldUp;
+	return *this;
 }
 
-void
-FlightCamera::roll(float rollIncrement) {
-    // Note that roll is in degrees, and that what the camera sees will
-    // roll in the opposite direction of the camera
-    float roll = glm::radians(rollIncrement);
-    // Rotate up & right vectors according to roll around direction vector
-    up = glm::normalize(up + glm::tan(roll)*right);
-    right = glm::cross(direction, up);
-    // Calculate the view transform (note that direction vector does not change)
-    lookAt(position, position + direction, up);
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withSpeed(float speed) {
+	camera->speed = speed;
+	return *this;
 }
 
-void
-FlightCamera::zoom(float zoomIncrement) {
-	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
-	fieldOfView = glm::min(fieldOfView,45.0f); // USE CLASS MAX FOV!!!!!
-	fieldOfView = glm::max(fieldOfView,1.0f);
-	setPerspectiveProjection(fieldOfView,0.1f,150.0f); // USE CLASS NEAR & FAR!!!!
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withRotationSpeed(float rotationSpeed) {
+	camera->rotationSpeed = rotationSpeed;
+	return *this;
+}
+
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withFieldOfView(float fieldOfView) {
+	camera->fieldOfView = fieldOfView;
+	return *this;
+}
+
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withMaxFieldOfView(float maxFieldOfView) {
+	camera->maxFieldOfView = maxFieldOfView;
+	return *this;
+}
+
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withNearPlane(float nearPlane) {
+	camera->nearPlane = nearPlane;
+	return *this;
+}
+
+FPS_Camera::FPS_CameraBuilder&
+FPS_Camera::FPS_CameraBuilder::withFarPlane(float farPlane) {
+	camera->farPlane = farPlane;	
+	return *this;
 }
 
 }
