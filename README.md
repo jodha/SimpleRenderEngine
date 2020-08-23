@@ -71,7 +71,7 @@ Clone the library and note that all the updates are currently only available on 
  * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre). Note that if you have forked the repository you should replace 'estrac' with your username.
  * cd sre
  * If you have forked the repository, run the following to stay in-sync:
- * git remote add upstream https://github.com/estrac/SimpleRenderEngine
+ * git remote add upstream https://github.com/estrac/SimpleRenderEngine.git
  * pwd (Note: use this to get the full-path-of-install-directory used below)
  * git checkout develop2
  * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
