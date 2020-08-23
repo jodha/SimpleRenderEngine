@@ -68,8 +68,10 @@ Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. 
 Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
 
  * cd [directory-to-install-into] 
- * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre)
+ * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre). Note that if you have forked the repository you should replace 'estrac' with your username.
  * cd sre
+ * If you have forked the repository, run the following to stay in-sync:
+ * git remote add upstream https://github.com/estrac/SimpleRenderEngine
  * pwd (Note: use this to get the full-path-of-install-directory used below)
  * git checkout develop2
  * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
