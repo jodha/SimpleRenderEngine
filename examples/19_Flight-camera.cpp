@@ -11,27 +11,6 @@
 #include <sre/Skybox.hpp>
 #include <sre/ModelImporter.hpp>
 #include <glm/gtc/type_ptr.hpp>
-// Needed to add the following (remove later) to access 'eulerAngleXYZ'
-//#include <glm/gtx/euler_angles.hpp>
-//#include <glm/gtc/constants.hpp>
-// Needed the following (remove later) to assert a camera condition
-//#include <cassert>
-
-// Things to do:
-// 1) Clean up camera class
-//		a) Move duplicate FPS & Flight camera code to base class
-//		b) Try to pull out part of yaw & pitch function to base class
-//		c) Handle other calls to camera class to make sure they don't conflict
-//		   with the FPS and Flight camera
-// 1.5) Change Mesh::draw to use EulerAngleXYZ
-// 1.7) Use unique_ptr or shared_ptr in Camera builders and light builder
-// 2) Change RenderPass draw from a <shared_ptr>& to <shared_ptr>&&,
-//	  and then directly pass shared_ptr_from_this in Mesh.cpp
-// 5) Add vertexes to the cube primitive faces to see if it fixes reflection
-// 6) Test on port to Windows and Mac
-// 7) Place a few new objects from Free3D in the domain (with Max)
-// 8) Fix camera movement (Max, with some help)
-// 9) Scale camera movement (both keyboard and mouse) by frame rate (with Max)
 
 using namespace sre;
 using namespace glm;
@@ -191,7 +170,7 @@ void frameUpdate(float deltaTime) {
 
 // Render (draw) the updated frame
 void frameRender() {
-	// Create render pass, initialize with world variables
+	// Create render pass, initialize with global variables
 	auto renderPass = RenderPass::create()
    	     .withCamera(camera)
    	     .withWorldLights(&worldLights)

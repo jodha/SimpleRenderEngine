@@ -11,11 +11,6 @@
 #include <sre/Skybox.hpp>
 #include <sre/ModelImporter.hpp>
 #include <glm/gtc/type_ptr.hpp>
-// Needed to add the following (remove later) to access 'eulerAngleXYZ'
-//#include <glm/gtx/euler_angles.hpp>
-//#include <glm/gtc/constants.hpp>
-// Needed the following (remove later) to assert a camera condition
-//#include <cassert>
 
 using namespace sre;
 using namespace glm;
@@ -176,7 +171,7 @@ void frameUpdate(float deltaTime) {
 
 // Render (draw) the updated frame
 void frameRender() {
-	// Create render pass, initialize with world variables
+	// Create render pass, initialize with global variables
 	auto renderPass = RenderPass::create()
    	     .withCamera(camera)
    	     .withWorldLights(&worldLights)
