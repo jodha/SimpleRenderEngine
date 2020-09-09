@@ -4,13 +4,8 @@
 
 #include "sre/Renderer.hpp"
 #include "sre/SDLRenderer.hpp"
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
 #include <sre/Skybox.hpp>
 #include <sre/ModelImporter.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 using namespace sre;
 using namespace glm;
