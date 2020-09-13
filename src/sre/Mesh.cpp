@@ -372,9 +372,9 @@ namespace sre {
 	void Mesh::draw(RenderPass& rp) {
 		std::shared_ptr<Mesh> thisMesh = shared_from_this();	
 		rp.draw(thisMesh, glm::translate(location)
-						  * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
-						  * glm::scale(scaling),
-						  material);
+						* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+						* glm::scale(scaling),
+						material);
 	}
 
     std::array<glm::vec3,2> Mesh::getBoundsMinMax() {

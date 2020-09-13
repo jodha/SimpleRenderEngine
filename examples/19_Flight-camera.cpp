@@ -84,7 +84,7 @@ int main() {
 	// Create the sky (with a horizon, called the 'Skybox')
     skybox = Skybox::create();
 
-	// Create a grid (wireframe) plane at top of domaine
+	// Create a grid (wireframe) plane at top of domain
     auto gridPlaneTopMaterial = Shader::getUnlit()->createMaterial();
 	gridPlaneTopMaterial->setColor({0.0f, 0.0f, 0.0f, 1.0f});
     gridPlaneTop = Mesh::create()
@@ -94,7 +94,7 @@ int main() {
 					.withMaterial(gridPlaneTopMaterial)
 					.build();
 
-	// Create a grid (wireframe) plane at bottom of the domaine
+	// Create a grid (wireframe) plane at bottom of the domain
     auto gridPlaneBottomMaterial = Shader::getUnlit()->createMaterial();
 	gridPlaneBottomMaterial->setColor({1.0f, 1.0f, 1.0f, 1.0f});
     gridPlaneBottom = Mesh::create()
