@@ -45,10 +45,10 @@ namespace sre {
                meshTopology,
                name,
                renderStats,
-			   locationIn,
-			   rotationIn,
-			   scalingIn,
-			   materialIn);
+               locationIn,
+               rotationIn,
+               scalingIn,
+               materialIn);
         Renderer::instance->meshes.emplace_back(this);
     }
 
@@ -157,10 +157,10 @@ namespace sre {
         renderStats.meshBytes += dataSize;
         renderStats.meshBytesAllocated += dataSize;
 
-		location = locationIn;
-		rotation = rotationIn;
-		scaling = scalingIn;
-		material = materialIn;
+        location = locationIn;
+        rotation = rotationIn;
+        scaling = scalingIn;
+        material = materialIn;
     }
 
     void Mesh::updateIndexBuffers() {
@@ -229,15 +229,15 @@ namespace sre {
             auto meshAttribute = attributeByName.find(shaderAttribute.first);
 
             bool attributeFoundInMesh = meshAttribute != attributeByName.end();
-            // allows mesh attributes to be smaller than shader attributes. E.g. if mesh is Vec2 and shader is Vec4, then OpenGL automatically append (z = 0.0, w=1.0) to the attribute in the shader
-            // currently only supported from vec2 or vec3 (not float)
-            // todo - add support float - vecX
+            // allows mesh attributes to be smaller than shader attributes. E.g. if mesh is Vec2 and shader is Vec4, then OpenGL automatically append
+            // (z = 0.0, w=1.0) to the attribute in the shader currently only supported from vec2 or vec3 (not float)
+            // TODO: add support float - vecX
             bool equalType = attributeFoundInMesh && (shaderAttribute.second.type == meshAttribute->second.attributeType ||
                     (shaderAttribute.second.type >= GL_FLOAT_VEC2 && shaderAttribute.second.type <= GL_FLOAT_VEC4 && shaderAttribute.second.type>= meshAttribute->second.attributeType)
                     || (shaderAttribute.second.type >= GL_INT_VEC2 && shaderAttribute.second.type <= GL_INT_VEC4 && shaderAttribute.second.type>= meshAttribute->second.attributeType)
                                                      );
             if (attributeFoundInMesh &&  equalType && shaderAttribute.second.arraySize == 1) {
-				glEnableVertexAttribArray(shaderAttribute.second.position);
+                glEnableVertexAttribArray(shaderAttribute.second.position);
                 if ((shaderAttribute.second.type >= GL_INT_VEC2 && shaderAttribute.second.type <= GL_INT_VEC4 && shaderAttribute.second.type>= meshAttribute->second.attributeType)){
                     glVertexAttribIPointer(shaderAttribute.second.position, meshAttribute->second.elementCount, meshAttribute->second.dataType, totalBytesPerVertex, BUFFER_OFFSET(meshAttribute->second.offset));
                 } else {
@@ -245,28 +245,28 @@ namespace sre {
                 }
                 vertexAttribArray++;
             } else {
-				assert(shaderAttribute.second.arraySize == 1 && "Constant vertex attributes not supported as arrays");
-				glDisableVertexAttribArray(shaderAttribute.second.position);
-				static const float a[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                assert(shaderAttribute.second.arraySize == 1 && "Constant vertex attributes not supported as arrays");
+                glDisableVertexAttribArray(shaderAttribute.second.position);
+                static const float a[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                 switch (shaderAttribute.second.type) {
-				case GL_INT_VEC4:
-					glVertexAttribI4iv(shaderAttribute.second.position, (GLint*)a);
-					break;
-				case GL_FLOAT_VEC4:
-					glVertexAttrib4fv(shaderAttribute.second.position, a);
-					break;
-				case GL_FLOAT_VEC3:
-					glVertexAttrib3fv(shaderAttribute.second.position, a);
-					break;
-				case GL_FLOAT_VEC2:
-					glVertexAttrib2fv(shaderAttribute.second.position, a);
-					break;
-				case GL_FLOAT:
-					glVertexAttrib1fv(shaderAttribute.second.position, a);
-					break;
+                case GL_INT_VEC4:
+                    glVertexAttribI4iv(shaderAttribute.second.position, (GLint*)a);
+                    break;
+                case GL_FLOAT_VEC4:
+                    glVertexAttrib4fv(shaderAttribute.second.position, a);
+                    break;
+                case GL_FLOAT_VEC3:
+                    glVertexAttrib3fv(shaderAttribute.second.position, a);
+                    break;
+                case GL_FLOAT_VEC2:
+                    glVertexAttrib2fv(shaderAttribute.second.position, a);
+                    break;
+                case GL_FLOAT:
+                    glVertexAttrib1fv(shaderAttribute.second.position, a);
+                    break;
                 default:
                     LOG_ERROR("Unhandled attribute type: %i",(int)shaderAttribute.second.type);
-                	break;
+                    break;
 
                 }
             }
@@ -345,37 +345,37 @@ namespace sre {
         return dataSize;
     }
 
-	glm::vec3 Mesh::getLocation() {
-		return location;
-	}
+    glm::vec3 Mesh::getLocation() {
+        return location;
+    }
 
-	void Mesh::setLocation(glm::vec3 locationIn) {
-		location = locationIn;
-	}
+    void Mesh::setLocation(glm::vec3 locationIn) {
+        location = locationIn;
+    }
 
-	void Mesh::setRotation(glm::vec3 rotationIn) {
-		rotation = glm::radians(rotationIn);
-	}
+    void Mesh::setRotation(glm::vec3 rotationIn) {
+        rotation = glm::radians(rotationIn);
+    }
 
-	void Mesh::setScaling(glm::vec3 newDirectionalScaling) {
-		scaling = newDirectionalScaling;
-	}
+    void Mesh::setScaling(glm::vec3 newDirectionalScaling) {
+        scaling = newDirectionalScaling;
+    }
 
-	void Mesh::setScaling(float newScaling) {
-		scaling = glm::vec3(newScaling, newScaling, newScaling);
-	}
+    void Mesh::setScaling(float newScaling) {
+        scaling = glm::vec3(newScaling, newScaling, newScaling);
+    }
 
-	void Mesh::setMaterial(std::shared_ptr<Material> newMaterial)	{
-		material = newMaterial;
-	}
+    void Mesh::setMaterial(std::shared_ptr<Material> newMaterial)   {
+        material = newMaterial;
+    }
 
-	void Mesh::draw(RenderPass& rp) {
-		std::shared_ptr<Mesh> thisMesh = shared_from_this();	
-		rp.draw(thisMesh, glm::translate(location)
-						* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
-						* glm::scale(scaling),
-						material);
-	}
+    void Mesh::draw(RenderPass& rp) {
+        std::shared_ptr<Mesh> thisMesh = shared_from_this();    
+        rp.draw(thisMesh, glm::translate(location)
+                        * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+                        * glm::scale(scaling),
+                          material);
+    }
 
     std::array<glm::vec3,2> Mesh::getBoundsMinMax() {
         return boundsMinMax;
@@ -511,30 +511,30 @@ namespace sre {
         return attributeByName.find(name) != attributeByName.end();
     }
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withLocation(glm::vec3 locationIn) {
-		location = locationIn;
-		return *this;
-	}
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withLocation(glm::vec3 locationIn) {
+        location = locationIn;
+        return *this;
+    }
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withRotation(glm::vec3 rotationIn) {
-		rotation = glm::radians(rotationIn);
-		return *this;
-	}
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withRotation(glm::vec3 rotationIn) {
+        rotation = glm::radians(rotationIn);
+        return *this;
+    }
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(glm::vec3 directionalScalingIn) {
-		scaling = directionalScalingIn;
-		return *this;
-	}
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(glm::vec3 directionalScalingIn) {
+        scaling = directionalScalingIn;
+        return *this;
+    }
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(float scalingIn) {
-		scaling = glm::vec3(scalingIn, scalingIn, scalingIn);
-		return *this;
-	}
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(float scalingIn) {
+        scaling = glm::vec3(scalingIn, scalingIn, scalingIn);
+        return *this;
+    }
 
-	Mesh::MeshBuilder& Mesh::MeshBuilder::withMaterial(std::shared_ptr<Material> materialIn) {
-		material = materialIn;
-		return *this;
-	}
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withMaterial(std::shared_ptr<Material> materialIn) {
+        material = materialIn;
+        return *this;
+    }
 
     Mesh::MeshBuilder &Mesh::MeshBuilder::withPositions(const std::vector<glm::vec3> &vertexPositions) {
         withAttribute("position", vertexPositions);
@@ -1059,7 +1059,7 @@ namespace sre {
         return *this;
     }
 
-	Mesh::MeshBuilder &Mesh::MeshBuilder::withWireCube(float length) {
+    Mesh::MeshBuilder &Mesh::MeshBuilder::withWireCube(float length) {
         using namespace glm;
         using namespace std;
 
@@ -1096,9 +1096,9 @@ namespace sre {
         withMeshTopology(MeshTopology::Lines);
 
         return *this;
-	}
+    }
 
-	Mesh::MeshBuilder &Mesh::MeshBuilder::withWirePlane(int numIntervals, float length) {
+    Mesh::MeshBuilder &Mesh::MeshBuilder::withWirePlane(int numIntervals, float length) {
         using namespace glm;
         using namespace std;
 
@@ -1108,26 +1108,26 @@ namespace sre {
             name = ss.str();
         }
 
-		float gridSpace = 2.0f * length / numIntervals;
-		int numLines = numIntervals + 1;
+        float gridSpace = 2.0f * length / numIntervals;
+        int numLines = numIntervals + 1;
 
         vector<vec3> positions;
-		positions.resize(numLines * numLines);
+        positions.resize(numLines * numLines);
 
-		vec3 lowerLeft = {-length, 0.0, -length};
-		vec3 currentCoord = lowerLeft;
+        vec3 lowerLeft = {-length, 0.0, -length};
+        vec3 currentCoord = lowerLeft;
 
-		int index = 0;
-		for (auto i = 0; i < numLines; i++) {
-			for (auto j = 0; j < numLines; j++) {
-				positions[index] = currentCoord;
-				index += 1;
-				currentCoord.z += gridSpace;
-			}
-			currentCoord.z = lowerLeft.z;
-			currentCoord.x += gridSpace;
-		}
-		
+        int index = 0;
+        for (auto i = 0; i < numLines; i++) {
+            for (auto j = 0; j < numLines; j++) {
+                positions[index] = currentCoord;
+                index += 1;
+                currentCoord.z += gridSpace;
+            }
+            currentCoord.z = lowerLeft.z;
+            currentCoord.x += gridSpace;
+        }
+        
         vector<uint32_t> indices;
 
         for (int i=0;i<positions.size();i++){
@@ -1144,7 +1144,7 @@ namespace sre {
         withMeshTopology(MeshTopology::Lines);
 
         return *this;
-	}
+    }
 
     Mesh::MeshBuilder &Mesh::MeshBuilder::withQuad(float size) {
         if (name.length() == 0){
