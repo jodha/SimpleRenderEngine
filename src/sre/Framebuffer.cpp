@@ -26,6 +26,20 @@ namespace sre{
         return *this;
     }
 
+    Framebuffer::FrameBufferBuilder& Framebuffer::FrameBufferBuilder::withColorTexture(unsigned int textureID, int width, int height) {
+//        assert(!texture->isDepthTexture());
+//        auto s = glm::uvec2{texture->getWidth(), texture->getHeight()};
+//        if (!textures.empty() || depthTexture.get()){
+//            assert(this->size == s);
+//        } else {
+//            this->size = s;
+//        }
+//        textures.push_back(texture);
+        this->size = glm::uvec2{width, height};
+        screenTextureId = textureID;
+        return *this;
+    }
+
     Framebuffer::FrameBufferBuilder& Framebuffer::FrameBufferBuilder::withDepthTexture(std::shared_ptr<Texture> texture) {
         assert(texture->isDepthTexture());
         auto s = glm::uvec2{texture->getWidth(), texture->getHeight()};
@@ -111,6 +125,11 @@ namespace sre{
     void Framebuffer::bind() {
         glBindFramebuffer(GL_FRAMEBUFFER, frameBufferObjectId);
         if (dirty){
+			
+			if (screenTextureId)
+		        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                GL_TEXTURE_2D_MULTISAMPLE, screenTextureId, 0);
+
             for (int i=0;i<textures.size();i++){
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, textures[i]->textureId, 0);
             }
@@ -174,17 +193,27 @@ namespace sre{
         }
         auto framebuffer = new Framebuffer(name);
         framebuffer->size = size;
+		// Hardwire the number of samples to 8, should check GL_MAX_SAMPLES
+		GLsizei msaa = 8;
 
+		using namespace std;
+		glEnable(GL_MULTISAMPLE);
         glGenFramebuffers(1, &(framebuffer->frameBufferObjectId));
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferObjectId);
 
         std::vector<GLenum> drawBuffers;
+        if (screenTextureId)
+		{
+	        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                GL_TEXTURE_2D_MULTISAMPLE, screenTextureId, 0);
+			drawBuffers.push_back(GL_COLOR_ATTACHMENT0);
+		}
         for (unsigned i=0;i<textures.size();i++){
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, textures[i]->textureId, 0);
             drawBuffers.push_back(GL_COLOR_ATTACHMENT0+i);
         }
 
-        if (textures.empty()){
+        if (textures.empty() && !screenTextureId){
             glGenRenderbuffers(1,&framebuffer->renderbuffer); // Create a renderbuffer object
             glBindRenderbuffer(GL_RENDERBUFFER, framebuffer->renderbuffer);
             glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, size.x, size.y);
@@ -204,11 +233,23 @@ namespace sre{
             glBindRenderbuffer(GL_RENDERBUFFER, framebuffer->renderbuffer);
 
             if (renderInfo().graphicsAPIVersionES){
-                glRenderbufferStorage(GL_RENDERBUFFER, renderInfo().graphicsAPIVersionMajor<=2?GL_DEPTH_COMPONENT16:GL_DEPTH_COMPONENT24,
-                                  size.x, size.y);
+				if (screenTextureId)
+	                glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa,
+						renderInfo().graphicsAPIVersionMajor<=2
+						?GL_DEPTH_COMPONENT16:GL_DEPTH_COMPONENT24,
+						size.x, size.y);
+				else
+	                glRenderbufferStorage(GL_RENDERBUFFER,
+						renderInfo().graphicsAPIVersionMajor<=2
+						?GL_DEPTH_COMPONENT16:GL_DEPTH_COMPONENT24,
+						size.x, size.y);
             } else {
-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-                                  size.x, size.y);
+				if (screenTextureId)
+                	glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa,
+										GL_DEPTH_COMPONENT, size.x, size.y);
+				else
+                	glRenderbufferStorage(GL_RENDERBUFFER,
+										GL_DEPTH_COMPONENT, size.x, size.y);
             }
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
             // attach the renderbuffer to depth attachment point

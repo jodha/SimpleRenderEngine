@@ -28,7 +28,6 @@ namespace sre{
 
     /**
      * Represent a texture (uploaded to the GPU).
-     * In general the width and the height of the texture should be power-of-two (e.g. 256 or 512)
      *
      * Textures can be created from files (png or jpeg). Alternative textures can be created using memory representation
      * of the texture in RGBA (one byte per color channel).
@@ -147,7 +146,8 @@ public:
     DepthPrecision getDepthPrecision();
 
     std::vector<char> getRawImage();                                                        // Read RGBA texture data from texture (GPU to CPU). Not supported in OpenGL ES
-    void* getNativeTexturePtr();                                                            // get texture id
+    unsigned int getNativeTextureId();                                                      // get texture id
+	void ReGenerateMipmaps();																// Re-generate the mipmaps (used when the texture data has changed)
 private:
     Texture(unsigned int textureId, int width, int height, uint32_t target, std::string string);
     void updateTextureSampler(bool filterSampling, Wrap wrapTextureCoordinates);

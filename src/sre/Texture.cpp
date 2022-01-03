@@ -115,11 +115,6 @@ namespace {
         return 0;
     }
 
-    bool isPowerOfTwo(unsigned int x) {
-        return ((x != 0) && !(x & (x - 1)));
-    }
-
-
 }
 
 namespace sre {
@@ -371,17 +366,6 @@ namespace sre {
             }
 
             GLint border = 0;
-
-            bool isPOT = isPowerOfTwo(textureDef.width) && isPowerOfTwo(textureDef.height);
-            if (!isPOT && filterSampling){
-                LOG_WARNING("Texture %s is not power of two (was %i x %i ). filter sampling ",textureDef.resourcename.c_str(), textureDef.width, textureDef.height);
-                filterSampling = false;
-            }
-            if (!isPOT && generateMipmaps){
-                LOG_WARNING("Texture %s is not power of two (was %i x %i ). mipmapping disabled ",textureDef.resourcename.c_str(), textureDef.width, textureDef.height);
-                generateMipmaps = false;
-            }
-
             GLenum type = GL_UNSIGNED_BYTE;
             glBindTexture(target, textureId);
             void* dataPtr = textureDef.data.size()>0?textureDef.data.data(): nullptr;
@@ -420,7 +404,6 @@ namespace sre {
             LOG_FATAL("Texture contain no data");
             return {};
         }
-
         // build texture
         Texture * res = new Texture(textureId, textureDefPtr->width, textureDefPtr->height, target, name);
         res->generateMipmap = this->generateMipmaps;
@@ -585,12 +568,8 @@ namespace sre {
     }
 
     void Texture::invokeGenerateMipmap() {
-        if ((!isPowerOfTwo((unsigned int)width) || !isPowerOfTwo((unsigned int)height))) {
-            LOG_WARNING("Ignore mipmaps for textures not power of two");
-        } else {
-            this->generateMipmap = true;
-            glGenerateMipmap(target);
-        }
+        this->generateMipmap = true;
+        glGenerateMipmap(target);
     }
 
 	int Texture::getDataSize() {
@@ -739,13 +718,13 @@ namespace sre {
 #endif
     }
 
-    void* Texture::getNativeTexturePtr(){
-        //https://stackoverflow.com/a/30106751/420250
-	    #define INT2VOIDP(i) (void*)(uintptr_t)(i)
-	    
-	    return INT2VOIDP(textureId);
-
-        #undef INT2VOIDP
+     unsigned int Texture::getNativeTextureId(){
+	    return textureId;
 	}
+
+    void Texture::ReGenerateMipmaps() {
+        glBindTexture(target, textureId);
+        invokeGenerateMipmap();
+    }
 
 }
