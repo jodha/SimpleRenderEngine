@@ -18,7 +18,6 @@
 #include "Mesh.hpp"
 
 
-
 namespace sre {
     // forward declaration
     class Mesh;
@@ -88,6 +87,7 @@ namespace sre {
         static Renderer* instance;                          // Singleton reference to the engine after initialization.
 
         int getMaxSceneLights();                            // Get maximum amout of scenelights per object
+
     private:
         int maxSceneLights = 4;                             // Maximum of scene lights
         SDL_Window *window;
