@@ -76,7 +76,7 @@ Clone the library and note that all the updates are currently only available on 
  * git checkout develop2
  * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
  * cd ../sre_build
- * cmake [full-path-of-install-directory] -DOpenGL_GL_PREFERENCE:TYPE=GLVND
+ * cmake [full-path-of-install-directory]
  * make
  * cd examples
  * ./SRE-Example-00_hello-engine
