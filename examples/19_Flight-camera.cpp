@@ -212,11 +212,11 @@ void keyEvent(SDL_Event& event) {
             // Roll camera (see explanation above; rotation is in degrees/sec)
             float degrees = camera.getRotationSpeed() * 1.0/5.0;
             if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT) {
-                // Roll camera counter-clockwise
-                camera.roll(degrees);
-            } else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
                 // Roll camera clockwise
                 camera.roll(-degrees);
+            } else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
+                // Roll camera counter-clockwise
+                camera.roll(degrees);
             }
         }
 
