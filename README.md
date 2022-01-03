@@ -4,10 +4,10 @@
 
 # SimpleRenderEngine
 
-This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). The intent of the updates is to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct use of transformation matrices). Several build issues have also been fixed.
+This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). The intent of the updates is to enhance the capabilities and to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct use of transformation matrices).
 
 Two new cameras (derived from the basic virtual camera) have been added:
-1) A basic "First-Person Surveyor" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
+1) A basic "First-Person Surveyor (FPS)" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
 2) A basic "Flight" camera (demonstrated in 'examples/19_Flight-camera.cpp')
 
 The goal of SimpleRenderEngine is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
@@ -65,7 +65,7 @@ Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. 
 
 #### Install sre
  
-Clone the library and note that all the updates are currently only available on the 'develop2' branch (they are in a 'Beta' state). Take the following steps:
+Clone the library and and take the following steps:
 
  * cd [directory-to-install-into] 
  * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre). Note that if you have forked the repository you should replace 'estrac' with your username.
@@ -73,7 +73,7 @@ Clone the library and note that all the updates are currently only available on 
  * If you have forked the repository, run the following to stay in-sync:
  * git remote add upstream https://github.com/estrac/SimpleRenderEngine.git
  * pwd (Note: use this to get the full-path-of-install-directory used below)
- * git checkout develop2
+ * git checkout
  * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
  * cd ../sre_build
  * cmake [full-path-of-install-directory]
