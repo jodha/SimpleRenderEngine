@@ -21,50 +21,50 @@
 
 #ifdef SRE_DEBUG_CONTEXT
 void GLAPIENTRY openglCallbackFunction(GLenum source,
-	GLenum type,
-	GLuint id,
-	GLenum severity,
-	GLsizei length,
-	const GLchar* message,
-	const void* userParam) {
-	using namespace std;
-	const char* typeStr;
-	switch (type) {
-	case GL_DEBUG_TYPE_ERROR:
-		typeStr = "ERROR";
-		break;
-	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-		typeStr = "DEPRECATED_BEHAVIOR";
-		break;
-	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-		typeStr = "UNDEFINED_BEHAVIOR";
-		break;
-	case GL_DEBUG_TYPE_PORTABILITY:
-		typeStr = "PORTABILITY";
-		break;
-	case GL_DEBUG_TYPE_PERFORMANCE:
-		typeStr = "PERFORMANCE";
-		break;
-	case GL_DEBUG_TYPE_OTHER:
-	default:
-		typeStr = "OTHER";
-		break;
-		}
-	const char* severityStr;
-	switch (severity) {
-	case GL_DEBUG_SEVERITY_LOW:
-		severityStr = "LOW";
-		break;
-	case GL_DEBUG_SEVERITY_MEDIUM:
-		severityStr = "MEDIUM";
-		break;
-	case GL_DEBUG_SEVERITY_HIGH:
-		severityStr = "HIGH";
-		break;
-	default:
-		severityStr = "Unknown";
-		break;
-	}
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam) {
+    using namespace std;
+    const char* typeStr;
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:
+        typeStr = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeStr = "DEPRECATED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeStr = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeStr = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeStr = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+    default:
+        typeStr = "OTHER";
+        break;
+        }
+    const char* severityStr;
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_LOW:
+        severityStr = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityStr = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityStr = "HIGH";
+        break;
+    default:
+        severityStr = "Unknown";
+        break;
+    }
     LOG_ERROR("---------------------opengl-callback-start------------\n"
               "message: %s\n"
               "type: %s\n"
@@ -74,7 +74,7 @@ void GLAPIENTRY openglCallbackFunction(GLenum source,
               ,message,typeStr, id ,severityStr
     );
 
-		}
+        }
 #endif
 
 namespace sre{
@@ -128,24 +128,37 @@ namespace sre{
         using MilliSeconds = std::chrono::duration<float, std::chrono::milliseconds::period>;
         auto lastTick = Clock::now();
 
+        int numberOfEvents = 0;
         SDL_Event e;
         //Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
+            ImGuiIO& imguiIO = ImGui::GetIO();
             ImGui_SRE_ProcessEvent(&e);
+
             switch (e.type) {
                 case SDL_QUIT:
                     running = false;
                     break;
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
-                    keyEvent(e);
+                    if (!imguiIO.WantCaptureKeyboard) keyEvent(e);
                     break;
                 case SDL_MOUSEMOTION:
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP:
                 case SDL_MOUSEWHEEL:
-                    mouseEvent(e);
+                    if (!imguiIO.WantCaptureMouse)
+                    {   // Block ImGui from setting mouse cursor (allow user to set cursor)
+                        imguiIO.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
+                        // Pass event
+                        mouseEvent(e);
+                    }
+                    else
+                    {   // Allow ImGui to set mouse cursor
+                        imguiIO.ConfigFlags = !ImGuiConfigFlags_NoMouseCursorChange;
+                        // Do not pass event
+                    }
                     break;
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_CONTROLLERBUTTONDOWN:
@@ -173,26 +186,52 @@ namespace sre{
                     otherEvent(e);
                     break;
             }
+            numberOfEvents++;
         }
-        {   // time meassure
+        // Determine whether to render frame for "minimalRendering" option
+        if (numberOfEvents > 0)
+        {
+            drawFrame = true;
+            if (minimalRendering)
+            {   // Draw at least two frames after each event: one to allow ImGui
+                // to handle the event and one to process actions triggered by
+                // ImGui (e.g. draw #1 draws pressed down OK button, draw #2
+                // hides the window and executes actions resulting from OK).
+                nMinimalRenderingFrames = 2;
+            }
+        }
+        else if (minimalRendering)
+        {
+            if (nMinimalRenderingFrames > 0) nMinimalRenderingFrames--;
+            else drawFrame = false;
+        }
+        // Update and draw frame, measure times, and swap window
+        {   // Measure time for event processing
             auto tick = Clock::now();
             deltaTimeEvent = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
             lastTick = tick;
         }
-        frameUpdate(deltaTimeSec);
-        {   // time meassure
-            auto tick = Clock::now();
-            deltaTimeUpdate = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
-            lastTick = tick;
+        if (drawFrame)
+        {
+            frameUpdate(deltaTimeSec);
+            {   // Measure time for updating the frame
+                auto tick = Clock::now();
+                deltaTimeUpdate = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
+                lastTick = tick;
+            }
+            frameRender();
+            {   // Measure time for rendering the frame
+                auto tick = Clock::now();
+                deltaTimeRender = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
+                lastTick = tick;
+            }
+            r->swapWindow();
         }
-        frameRender();
-        {   // time meassure
-            auto tick = Clock::now();
-            deltaTimeRender = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
-            lastTick = tick;
+        else
+        {
+            deltaTimeUpdate = 0.0f;
+            deltaTimeRender = 0.0f;
         }
-
-        r->swapWindow();
     }
 
     void SDLRenderer::startEventLoop() {
@@ -210,7 +249,7 @@ namespace sre{
         float deltaTime = 0;
 
         while (running){
-			frame(deltaTime);
+            frame(deltaTime);
 
             auto tick = Clock::now();
             deltaTime = std::chrono::duration_cast<FpSeconds>(tick - lastTick).count();
@@ -218,7 +257,17 @@ namespace sre{
             // warn potential busy wait (SDL_Delay may truncate small numbers)
             // https://forum.lazarus.freepascal.org/index.php?topic=35689.0
             while (deltaTime < timePerFrame){
-                Uint32 delayMs = static_cast<Uint32>((timePerFrame - deltaTime) / 1000);
+                Uint32 delayMs;
+                float delayS = timePerFrame - deltaTime;
+                if (!minimalRendering)
+                {   // Match frame rate exactly by underestimating delay
+                    // The while loop will fill the < 1 Microsecond gap 
+                    delayMs = static_cast<Uint32>(delayS * 1000.0f);
+                }
+                else
+                {   // For minimal CPU use, overestimate delay by <= 1 Ms
+                    delayMs = static_cast<Uint32>(delayS * 1000.0f + 1);
+                }
                 SDL_Delay(delayMs);
                 tick = Clock::now();
                 deltaTime = std::chrono::duration_cast<FpSeconds>(tick - lastTick).count();
@@ -242,7 +291,7 @@ namespace sre{
 
         while (running){
             vr->render();
-			frame(deltaTime);
+            frame(deltaTime);
 
             auto tick = Clock::now();
             deltaTime = std::chrono::duration_cast<FpSeconds>(tick - lastTick).count();
@@ -317,8 +366,46 @@ namespace sre{
 
     glm::vec3 SDLRenderer::getLastFrameStats() {
         return {
-                deltaTimeEvent,deltaTimeUpdate,deltaTimeRender
+            deltaTimeEvent,deltaTimeUpdate,deltaTimeRender
         };
+    }
+
+    void SDLRenderer::Begin(Cursor cursorStart) {
+        if (cursor != NULL) {
+            LOG_ERROR("Last mouse cursor not freed in SDLRenderer::Begin");
+            SDL_FreeCursor(cursor);
+        }
+        switch (cursorStart) {
+            case Cursor::Arrow:
+                cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+                break;
+            case Cursor::Wait:
+                cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+                break;
+            case Cursor::Hand:
+                cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+                break;
+            case Cursor::SizeAll:
+                cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+                break;
+            default:
+                LOG_ERROR("Invalid mouse cursor passed to SDLRenderer::Begin");
+                return;
+        }
+        cursorType = cursorStart;
+        SDL_SetCursor(cursor);
+    }
+
+    void SDLRenderer::End(Cursor cursorEnd) {
+        if (cursorEnd != cursorType)
+            LOG_ERROR("Ending cursor not same as starting cursor in SDLRenderer");
+        cursorType = Cursor::Regular;
+        SDL_FreeCursor(cursor);
+        cursor = NULL;
+    }
+
+    void SDLRenderer::SetMinimalRendering(bool minimalRendering) {
+        this->minimalRendering = minimalRendering;
     }
 
     SDLRenderer::InitBuilder::~InitBuilder() {
@@ -373,28 +460,35 @@ namespace sre{
 #endif
             sdlRenderer->r = new Renderer(sdlRenderer->window, vsync, maxSceneLights);
 
+            sdlRenderer->SetMinimalRendering(minimalRendering);
+
 #ifdef SRE_DEBUG_CONTEXT
             if (glDebugMessageCallback) {
-				LOG_INFO("Register OpenGL debug callback ");
+                LOG_INFO("Register OpenGL debug callback ");
 
-				std::cout << "Register OpenGL debug callback " << std::endl;
-				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-				glDebugMessageCallback(openglCallbackFunction, nullptr);
-				GLuint unusedIds = 0;
-				glDebugMessageControl(GL_DONT_CARE,
-					GL_DONT_CARE,
-					GL_DONT_CARE,
-					0,
-					&unusedIds,
-					true);
+                std::cout << "Register OpenGL debug callback " << std::endl;
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+                glDebugMessageCallback(openglCallbackFunction, nullptr);
+                GLuint unusedIds = 0;
+                glDebugMessageControl(GL_DONT_CARE,
+                    GL_DONT_CARE,
+                    GL_DONT_CARE,
+                    0,
+                    &unusedIds,
+                    true);
 
-			}
+            }
 #endif
         }
     }
 
     SDLRenderer::InitBuilder &SDLRenderer::InitBuilder::withMaxSceneLights(int maxSceneLights) {
         this->maxSceneLights = maxSceneLights;
+        return *this;
+    }
+
+    SDLRenderer::InitBuilder &SDLRenderer::InitBuilder::withMinimalRendering(bool minimalRendering) {
+        this->minimalRendering = minimalRendering;
         return *this;
     }
 

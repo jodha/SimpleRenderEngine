@@ -35,6 +35,9 @@ class Renderer;
 // The `startEventLoop()` will start the event loop, which polls the event queue in the
 // beginning of each frame (and providing callbacks to `keyEvent` and `mouseEvent`), followed by a `frameUpdate(float)`
 // and a `frameRender()`.
+
+enum class Cursor {Arrow, Wait, Hand, SizeAll, Regular};
+
 class DllExport SDLRenderer {
 public:
     class InitBuilder {
@@ -45,6 +48,7 @@ public:
         InitBuilder& withVSync(bool vsync);
         InitBuilder& withGLVersion(int majorVersion, int minorVersion);
         InitBuilder& withMaxSceneLights(int maxSceneLights);            // Set max amount of concurrent lights
+        InitBuilder& withMinimalRendering(bool minimalRendering);       // Minimize rendering for graphics that are mostly static (e.g. drawings)
         void build();
     private:
         explicit InitBuilder(SDLRenderer* sdlRenderer);
@@ -55,6 +59,7 @@ public:
         int glMajorVersion = 3;
         int glMinorVersion = 3;
         int maxSceneLights = 4;
+        bool minimalRendering = false;
         friend class SDLRenderer;
     };
 
@@ -63,7 +68,8 @@ public:
 
     // event handlers (assigned empty default handlers)
     std::function<void(float deltaTimeSec)> frameUpdate;        // Callback every frame with time since last callback in seconds
-    std::function<void()> frameRender;                          // Callback be render events - called after frameUpdate. The `Renderer::swapFrame()` is automatically invoked after the callback.
+    std::function<void()> frameRender;                          // Callback be render events - called after frameUpdate. The `Renderer::swapFrame()` is
+                                                                // automatically invoked after the callback.
     std::function<void(SDL_Event& e)> keyEvent;                 // Callback of `SDL_KEYDOWN` and `SDL_KEYUP`.
     std::function<void(SDL_Event& e)> mouseEvent;               // Callback of `SDL_MOUSEMOTION`, `SDL_MOUSEBUTTONDOWN`, `SDL_MOUSEBUTTONUP`, `SDL_MOUSEWHEEL`.
     std::function<void(SDL_Event& e)> controllerEvent;          // Callback of `SDL_CONTROLLERAXISMOTION`, `SDL_CONTROLLERBUTTONDOWN`, `SDL_CONTROLLERBUTTONUP`,
@@ -74,8 +80,8 @@ public:
     std::function<void(SDL_Event& e)> otherEvent;               // Invoked if unhandled SDL event
 
     InitBuilder init();                                         // Create the window and the graphics context (instantiates the sre::Renderer). Note that most
-                                                                // other sre classes requires the graphics content to be created before they can be used (e.g. a Shader cannot be
-                                                                // created before `init()`).
+                                                                // other sre classes requires the graphics content to be created before they can be used
+                                                                // (e.g. a Shader cannot be created before `init()`).
                                                                 // The initialization happens on InitBuilder::build or InitBuilder::~InitBuilder()
 
     void setWindowTitle(std::string title);
@@ -86,14 +92,17 @@ public:
     bool isFullscreen();                                        //
 
     void setMouseCursorVisible(bool enabled = true);            // Show/hide mouse cursor. Not supported in Emscripten
-    bool isMouseCursorVisible();                                // GUI should not be rendered when mouse cursor is not visible (this would force the mouse cursor to appear again)
+    bool isMouseCursorVisible();                                // GUI should not be rendered when mouse cursor is not visible (this would force the mouse
+                                                                // cursor to appear again)
 
-    bool setMouseCursorLocked(bool enabled = true);             // Lock the mouse cursor, such that mouse cursor motion is detected, (while position remains fixed). Not supported in Emscripten
+    bool setMouseCursorLocked(bool enabled = true);             // Lock the mouse cursor, such that mouse cursor motion is detected, (while position remains
+                                                                // fixed). Not supported in Emscripten
     bool isMouseCursorLocked();                                 // Locking the mouse cursor automatically hides the mouse cursor
 
-    void startEventLoop();                                      // Start the event loop. Note that this member function in usually blocking (until the `stopEventLoop()` has been
-                                                                // called). Using Emscripten the event loop is not blocking (but internally using a callback function), which means
-                                                                // that when using Emscripten avoid allocating objects on the stack (see examples for a workaround).
+    void startEventLoop();                                      // Start the event loop. Note that this member function in usually blocking (until the
+                                                                // `stopEventLoop()` has been called). Using Emscripten the event loop is not blocking (but
+                                                                // internally using a callback function), which means that when using Emscripten avoid allocating
+                                                                // objects on the stack (see examples for a workaround).
 
     void startEventLoop(std::shared_ptr<VR> vr);                //
 
@@ -104,6 +113,12 @@ public:
     static SDLRenderer* instance;                               // Singleton reference to the engine after initialization.
 
     glm::vec3 getLastFrameStats();                              // Returns delta time for last frame wrt event, update and render
+
+    void Begin(Cursor cursorIn);
+    void End(Cursor cursorIn);
+
+    void SetMinimalRendering(bool minimalRendering);
+
 private:
     void frame(float deltaTimeSec);
     Renderer* r;
@@ -112,7 +127,11 @@ private:
     std::unique_ptr<VR> vr;
     std::string windowTitle;
 
-    float timePerFrame = 1.0f/60;
+    float timePerFrame = 1.0f/60.0f;
+
+    bool drawFrame = true;
+    bool minimalRendering = false;
+    unsigned short nMinimalRenderingFrames = 0;
 
     bool running = false;
     int windowWidth = 800;
@@ -122,6 +141,9 @@ private:
     float deltaTimeEvent;
     float deltaTimeUpdate;
     float deltaTimeRender;
+
+    SDL_Cursor* cursor;
+    Cursor cursorType = Cursor::Regular;
 
     friend class SDLRendererInternal;
     friend class Inspector;
