@@ -8,8 +8,9 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include "glm/glm.hpp"
-
+#include "sre/Log.hpp"
 #include "sre/impl/Export.hpp"
 
 namespace sre {
@@ -88,7 +89,7 @@ namespace sre {
                                                                                                  // y the y coordinate of the viewport (default 0)
                                                                                                  // width the width of the viewport (default window width)
                                                                                                  // height the height of the viewport (default window height)
-    private:
+    protected:
         enum class ProjectionType {
             Perspective,
             Orthographic,
@@ -96,6 +97,7 @@ namespace sre {
             Custom
         };
         ProjectionType projectionType = ProjectionType::Orthographic;
+    private:
         union {
             struct {
                 float fieldOfViewY;
@@ -121,8 +123,13 @@ namespace sre {
 
     };
 
-	// Pure-virtual Camera base class that can be used to create custom
-	// cameras. See FlightCamera and FPS_Camera classes for examples
+	// Camera base class that can be used to create custom cameras.
+	// See FlightCamera and FPS_Camera classes for examples.
+
+	template <typename T>
+	class CustomCameraBuilder;
+
+	template <typename T>
     class DllExport CustomCamera : public Camera {
 	// Note that the following functions from the Camera base class:
 	//		lookAt, setPositionAndRotation, setPerspectiveProjection,
@@ -133,90 +140,126 @@ namespace sre {
 	// trust that derived classes from CustomCamera will use them
 	// appropriately in conjunction with the CustomCamera class.
 	public:
+		virtual ~CustomCamera() = default;
 		// Get and set speed that camaera moves (in world units/sec)
 		void setSpeed(float speedIn);
 		float getSpeed();
 		float getRotationSpeed();
 		void setRotationSpeed(float rotationSpeed);
-		// Get and set projection camera properties
-		float getFieldOfView();
-		void setFieldOfView(float fieldOfViewIn);
-		float getMaxFieldOfView();
-		void setMaxFieldOfView(float maxFieldOfViewIn);
-		float getNearPlane();
+		// Set generic camera properties
 		void setNearPlane(float nearPlaneIn);
-		float getFarPlane();
 		void setFarPlane(float farPlaneIn);
-		// Change direction camera is pointing according to pitch and yaw
-		virtual void pitchAndYaw(float pitchIncrement, float yawIncrement) = 0;
-		// 'Zoom' the camera by changing the field-of-view
+		// Set OrthographicProjection camera properties
+		void setWorldHalfHeight(float worldHalfHeightIn);
+		// Set projection camera properties
+		void setFieldOfView(float fieldOfViewIn);
+		void setMaxFieldOfView(float maxFieldOfViewIn);
+		// Move the position of the camera by a vector delta
+		void move(glm::vec3 deltaVector);
+		// 'Zoom' camera by changing field-of-view or world-half-height
 		virtual void zoom(float zoomIncrement);	
 	protected:
-		CustomCamera();
+		friend class CustomCameraBuilder<T>;
+		CustomCamera();			// Need to set either worldHalfHeight (to
+								// initialize Orthographic view) or fieldOfView
+								// (to initialize Perspective view)
 		void init();			// Initialize the camera with existing values
 		glm::vec3 position; 	// Position of the camera in world space
 		glm::vec3 direction; 	// Unit vector pointing from camera to target
 		glm::vec3 up; 			// Unit vector perpendicular to direction
 		glm::vec3 right; 		// Unit vector perpendicular to direction & up
-		// Camera 'Field of View' in degrees ('warping' appears > 45.0)
-		float fieldOfView;
-		float maxFieldOfView;
 		// Near and far plane for projection
 		float nearPlane;
 		float farPlane;
+		// Half of height of window in world coords
+		// Used for Orhtographic camera
+		float worldHalfHeight;
+		// Camera 'Field of View' in degrees ('warping' appears > 45.0)
+		// Used for Perspective camera
+		float fieldOfView;
+		float maxFieldOfView;
 		// Camera speed is distance (in world-space units) covered per second
 		float speed;
 		// Camera rotation speed is in degrees/sec
 		float rotationSpeed;
 	};
 
+	template <typename T>
+	class DllExport CustomCameraBuilder {
+	public:
+		virtual ~CustomCameraBuilder() = default;
+		T& withPosition(glm::vec3 position);
+		T& withDirection(glm::vec3 direction);
+		T& withUpDirection(glm::vec3 upDirection);
+		T& withSpeed(float speed);
+		T& withRotationSpeed(float rotationSpeed);
+		T& withFieldOfView(float fieldOfView);
+		T& withMaxFieldOfView(float maxFieldOfView);
+		T& withNearPlane(float nearPlane);
+		T& withFarPlane(float farPlane);
+	protected:
+		friend class CustomCamera<T>;
+		CustomCameraBuilder() = default;
+		std::shared_ptr<CustomCamera<T>> camera = nullptr;
+	};
+	
+	class FlightCameraBuilder;
+
 	// Custom basic flight camera. Currently does not visualize a cockpit
-    class DllExport FlightCamera : public CustomCamera {
+    class DllExport FlightCamera : public CustomCamera<FlightCameraBuilder> {
     public:
-		class FlightCameraBuilder;
+		virtual ~FlightCamera() = default;
 		// Create FlightCamera with 'builder' pattern in CustomCamera base class
 		static FlightCameraBuilder create();
-        FlightCamera();
+		// Move the camera by disance in the direction camera is pointing
 		virtual void move(float distance);
+		using CustomCamera<FlightCameraBuilder>::move;
 		// Change direction camera is pointing according to pitch and yaw
 		virtual void pitchAndYaw(float pitchIncrement, float yawIncrement);
 		virtual void roll(float rollIncrement);
+	protected:
+		friend class FlightCameraBuilder;
+		struct MakeSharedEnabler; // Enable make_shared to use protected ctor
+        FlightCamera() = default;
 	};
 
-	class DllExport FlightCamera::FlightCameraBuilder {
+	struct FlightCamera::MakeSharedEnabler : public FlightCamera {
+	// std::make_shared requires a public constructor
 	public:
-		~FlightCameraBuilder();
-		FlightCameraBuilder& withPosition(glm::vec3 position);
-		FlightCameraBuilder& withDirection(glm::vec3 direction);
-		FlightCameraBuilder& withUpDirection(glm::vec3 upDirection);
-		FlightCameraBuilder& withSpeed(float speed);
-		FlightCameraBuilder& withRotationSpeed(float rotationSpeed);
-		FlightCameraBuilder& withFieldOfView(float fieldOfView);
-		FlightCameraBuilder& withMaxFieldOfView(float maxFieldOfView);
-		FlightCameraBuilder& withNearPlane(float nearPlane);
-		FlightCameraBuilder& withFarPlane(float farPlane);
-		FlightCamera build();
-	private:
+		MakeSharedEnabler() : FlightCamera() {}
+	};
+
+	class DllExport FlightCameraBuilder
+					: public CustomCameraBuilder<FlightCameraBuilder> {
+	public:
+		~FlightCameraBuilder() = default;
+		// Inherits all the CustomCameraBuilder<T>::with... methods
+		std::shared_ptr<FlightCamera> build();
+	protected:
 		friend class FlightCamera;
 		FlightCameraBuilder();
-		FlightCamera * camera;
 	};
 
+	class FPS_CameraBuilder;
+
 	// Custom basic First-Person Surveyor (a.k.a. Minecraft-like) camera
-    class DllExport FPS_Camera : public CustomCamera {
+    class DllExport FPS_Camera : public CustomCamera<FPS_CameraBuilder> {
     public:
-		class FPS_CameraBuilder;
+		virtual ~FPS_Camera() = default;
 		// Create FPS_Camera with 'builder' pattern in CustomCamera base class
 		static FPS_CameraBuilder create();
-        FPS_Camera();
 		enum class Direction {Forward, Backward, Left, Right, Up, Down};
 		// Move the camera horizontally (perpendicular to worldUp Direction)
 		virtual void move(float distance, Direction direction);
+		using CustomCamera<FPS_CameraBuilder>::move;
 		// Change direction camera is pointing according to pitch and yaw
 		virtual void pitchAndYaw(float pitchIncrement, float yawIncrement);
 	protected:
+		friend class FPS_CameraBuilder;
+		struct MakeSharedEnabler; // Enable make_shared to use protected ctor
+        FPS_Camera() = default;
 		void init();
-		// "World up" direction vector in world coordinates (neded to project
+		// "World up" direction vector in world coordinates (needed to project
 		// the direction vector onto the horizontal plane for an FPS camera)
 		glm::vec3 worldUp; 
 		// Vector pointing in the direction the camera will move (constrained
@@ -226,24 +269,187 @@ namespace sre {
 		float forwardLen;
 	};
 
-	class DllExport FPS_Camera::FPS_CameraBuilder {
+	struct FPS_Camera::MakeSharedEnabler : public FPS_Camera {
+	// std::make_shared requires a public constructor
 	public:
-		~FPS_CameraBuilder();
-		FPS_CameraBuilder& withPosition(glm::vec3 position);
-		FPS_CameraBuilder& withDirection(glm::vec3 direction);
-		FPS_CameraBuilder& withUpDirection(glm::vec3 upDirection);
+		MakeSharedEnabler() : FPS_Camera() {}
+	};
+
+	class DllExport FPS_CameraBuilder
+					: public CustomCameraBuilder<FPS_CameraBuilder> {
+	public:
+		~FPS_CameraBuilder() = default;
 		FPS_CameraBuilder& withWorldUpDirection(glm::vec3 worldUpDirection);
-		FPS_CameraBuilder& withSpeed(float speed);
-		FPS_CameraBuilder& withRotationSpeed(float rotationSpeed);
-		FPS_CameraBuilder& withFieldOfView(float fieldOfView);
-		FPS_CameraBuilder& withMaxFieldOfView(float maxFieldOfView);
-		FPS_CameraBuilder& withNearPlane(float nearPlane);
-		FPS_CameraBuilder& withFarPlane(float farPlane);
-		FPS_Camera build();
+		FPS_CameraBuilder& withWorldHalfHeight(float worldHalfHeight);
+		std::shared_ptr<FPS_Camera> build();
 	private:
 		friend class FPS_Camera;
 		FPS_CameraBuilder();
-		FPS_Camera * camera;
 	};
 
+// CustomCamera Class Method Implementations ==================================
+
+template<typename T>
+CustomCamera<T>::CustomCamera() : Camera(),
+							 position {0.0, 0.0, 0.0},
+							 direction {0.0, 0.0, -1.0},
+							 up {0.0, 1.0, 0.0},
+							 speed {1.0f},
+							 rotationSpeed {1.0f},
+							 worldHalfHeight {0.0f},
+							 fieldOfView{0.0f},
+							 nearPlane {0.1f},
+							 farPlane {100.0f} {
+	maxFieldOfView = fieldOfView;
+}	
+
+template<typename T>
+void CustomCamera<T>::init() {
+	direction = glm::normalize(direction);
+	up = glm::normalize(up);
+	right = glm::cross(direction, up);
+	if (worldHalfHeight > 0.0f && fieldOfView > 0.0f)
+	{
+		LOG_ERROR("Should not set both worldHalfHeight (for " 
+		"Orthographic Projection) and fieldOfView (for Perspective " 
+		"Projection). Choosing Perspective");
+		worldHalfHeight = 0.0f;
+	}	
+	if (worldHalfHeight > 0.0f)
+		setOrthographicProjection(worldHalfHeight, nearPlane, farPlane);
+	else if (fieldOfView > 0.0f)
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	else
+	{	// Default to perspective projection
+		fieldOfView = 45.0f;
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	}
+    lookAt(position, position + direction, up);
 }
+
+template<typename T> void
+CustomCamera<T>::setSpeed(float speedIn) {
+	speed = speedIn;
+}
+
+template<typename T> float
+CustomCamera<T>::getSpeed() {
+	return speed;
+}
+
+template<typename T> void
+CustomCamera<T>::setRotationSpeed(float rotationSpeedIn) {
+	rotationSpeed = rotationSpeedIn;
+}
+
+template<typename T> float
+CustomCamera<T>::getRotationSpeed() {
+	return rotationSpeed;
+}
+
+template<typename T> void
+CustomCamera<T>::setWorldHalfHeight(float worldHalfHeightIn) {
+	worldHalfHeight = worldHalfHeightIn;
+}
+
+template<typename T> void
+CustomCamera<T>::setFieldOfView(float fieldOfViewIn) {
+	fieldOfView = fieldOfViewIn;
+}
+
+template<typename T> void
+CustomCamera<T>::setMaxFieldOfView(float maxFieldOfViewIn) {
+	maxFieldOfView = maxFieldOfViewIn;
+}
+
+template<typename T> void
+CustomCamera<T>::setNearPlane(float nearPlaneIn) {
+	nearPlane = nearPlaneIn;
+}
+
+template<typename T> void
+CustomCamera<T>::setFarPlane(float farPlaneIn) {
+	farPlane = farPlaneIn;
+}
+
+template<typename T> void
+CustomCamera<T>::move(glm::vec3 deltaVector) {
+	position += deltaVector;
+	// Set the camera view transform
+	lookAt(position, position + direction, up);
+}
+
+template<typename T> void
+CustomCamera<T>::zoom(float zoomIncrement) {
+	if (fieldOfView > 0.0)
+	{	// For Perpective Projection camera
+		fieldOfView -= zoomIncrement; // Decreasing the FOV increases "zoom"
+		fieldOfView = glm::min(fieldOfView, maxFieldOfView);
+		fieldOfView = glm::max(fieldOfView, 1.0f);
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	}
+	else if (worldHalfHeight > 0.0)
+	{ 	// For Orthographic Projection camera
+		worldHalfHeight *= (1.0f + zoomIncrement);
+		setOrthographicProjection(worldHalfHeight, nearPlane, farPlane);
+	}
+}
+
+// CustomCameraBuilder Class Method Implementations ============================
+
+template<typename T> T&
+CustomCameraBuilder<T>::withPosition(glm::vec3 position) {
+	camera->position = position;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withDirection(glm::vec3 direction) {
+	camera->direction = direction;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withUpDirection(glm::vec3 upDirection) {
+	camera->up = upDirection;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withSpeed(float speed) {
+	camera->speed = speed;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withRotationSpeed(float rotationSpeed) {
+	camera->rotationSpeed = rotationSpeed;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withFieldOfView(float fieldOfView) {
+	camera->fieldOfView = fieldOfView;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withMaxFieldOfView(float maxFieldOfView) {
+	camera->maxFieldOfView = maxFieldOfView;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withNearPlane(float nearPlane) {
+	camera->nearPlane = nearPlane;
+    return dynamic_cast<T&>(*this);
+}
+
+template<typename T> T&
+CustomCameraBuilder<T>::withFarPlane(float farPlane) {
+	camera->farPlane = farPlane;	
+    return dynamic_cast<T&>(*this);
+}
+
+}
+

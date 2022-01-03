@@ -13,7 +13,7 @@ using namespace glm;
 // Global variables ============================================================
 
 // Environment
-FlightCamera camera;
+std::shared_ptr<FlightCamera> camera;
 WorldLights worldLights;
 std::shared_ptr<Skybox> skybox;
 float elapsedTime = 0.0f;
@@ -57,8 +57,8 @@ int main() {
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
 	float rotationSpeed = 5.0f; // 5 degrees / second
 	float fieldOfView= 45.0f;
-//	camera.init(position,direction,up, speed,rotationSpeed,fieldOfView);
-//	camera.init({0.0f, 0.0f, 10.0f * worldUnit}, // position
+//	camera->init(position,direction,up, speed,rotationSpeed,fieldOfView);
+//	camera->init({0.0f, 0.0f, 10.0f * worldUnit}, // position
 //				{0.0f, 0.0f, -1.0f}, // direction
 //				{0.0f, 1.0f,  0.0f}, // up
 //				2.0f * worldUnit, 5.0f, // speed, rotationSpeed
@@ -167,7 +167,7 @@ void frameUpdate(float deltaTime) {
 void frameRender() {
 	// Create render pass, initialize with global variables
 	auto renderPass = RenderPass::create()
-   	     .withCamera(camera)
+   	     .withCamera(*camera)
    	     .withWorldLights(&worldLights)
    	     .withSkybox(skybox)
    	     .withName("Frame")
@@ -188,9 +188,9 @@ void keyEvent(SDL_Event& event) {
 		if (key == SDLK_EQUALS || key == SDLK_MINUS) {
 			float zoomIncrement = 5.0;
 			if (key == SDLK_EQUALS) {
-				camera.zoom(zoomIncrement);
+				camera->zoom(zoomIncrement);
 			} else if (key == SDLK_MINUS) {
-				camera.zoom(-zoomIncrement);
+				camera->zoom(-zoomIncrement);
 			}
 		}
 		if (key == SDLK_w || key == SDLK_k || key == SDLK_UP ||
@@ -198,25 +198,25 @@ void keyEvent(SDL_Event& event) {
             // Calculate the distance the camera should move
             // Assume user presses a key in 1/5 of a second (5 presses per sec)
             // Distance traveled in 1/5 of a second = speed (unit/s) * time (s)
-            float distance = camera.getSpeed() * 1.0/5.0;
+            float distance = camera->getSpeed() * 1.0/5.0;
             if (key == SDLK_w || key == SDLK_k || key == SDLK_UP) {
                 // Move camera forward, towards target
-                camera.move(distance);
+                camera->move(distance);
             } else if (key == SDLK_s || key == SDLK_j || key == SDLK_DOWN) {
                 // Move camera backward, away from target
-                camera.move(-distance);
+                camera->move(-distance);
             }
         }
         if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT ||
             key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
             // Roll camera (see explanation above; rotation is in degrees/sec)
-            float degrees = camera.getRotationSpeed() * 1.0/5.0;
+            float degrees = camera->getRotationSpeed() * 1.0/5.0;
             if (key == SDLK_a || key == SDLK_h || key == SDLK_LEFT) {
                 // Roll camera clockwise
-                camera.roll(-degrees);
+                camera->roll(-degrees);
             } else if (key == SDLK_d || key == SDLK_l || key == SDLK_RIGHT) {
                 // Roll camera counter-clockwise
-                camera.roll(degrees);
+                camera->roll(degrees);
             }
         }
 
@@ -234,15 +234,15 @@ void mouseEvent(SDL_Event& event) {
 		mouseDown = false;
 	} else if (event.type == SDL_MOUSEMOTION && mouseDown) {
 		// Mouse movement is degrees per pixel moved
-        float degreesPerPixel = 0.02f * camera.getRotationSpeed();
+        float degreesPerPixel = 0.02f * camera->getRotationSpeed();
 		float yaw = (event.motion.x - lastMouse_x) * degreesPerPixel;
 		float pitch = (lastMouse_y - event.motion.y) * degreesPerPixel;
 		lastMouse_x = event.motion.x;
 		lastMouse_y = event.motion.y;
-		camera.pitchAndYaw(pitch, yaw);
+		camera->pitchAndYaw(pitch, yaw);
     } else if (event.type == SDL_MOUSEWHEEL){ // Works for two-finger touch
 		float zoomPerClick = 0.5f;
 		float zoomIncrement = event.wheel.y * zoomPerClick;
-		camera.zoom(zoomIncrement);
+		camera->zoom(zoomIncrement);
 	}
 }

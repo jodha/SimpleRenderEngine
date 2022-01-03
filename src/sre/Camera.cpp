@@ -146,7 +146,7 @@ namespace sre {
     std::array<glm::vec3, 2> Camera::screenPointToRay(glm::vec2 position) {
         glm::vec2 scaledWindowsSize = (glm::vec2)Renderer::instance->getWindowSize() * viewportSize;
 
-        position = (position / scaledWindowsSize - viewportOffset/viewportSize)*2.0f-glm::vec2(1.0f);
+        position = (position / scaledWindowsSize - viewportOffset/viewportSize)*2.0f - glm::vec2(1.0f);
 
         auto viewProjection = getProjectionTransform(scaledWindowsSize) * viewTransform;
         auto invViewProjection = glm::inverse(viewProjection);
@@ -162,94 +162,12 @@ namespace sre {
 
     }
 
-// CustomCamera Class Method Implementations ==================================
-
-CustomCamera::CustomCamera():Camera(),
-							 position {0.0, 0.0, 0.0},
-							 direction {0.0, 0.0, -1.0},
-							 up {0.0, 1.0, 0.0},
-							 speed {1.0f},
-							 rotationSpeed {1.0f},
-							 fieldOfView {45.0f},
-							 nearPlane {0.1f},
-							 farPlane {100.0f} {
-	maxFieldOfView = fieldOfView;
-}	
-	
-void CustomCamera::init() {
-	direction = glm::normalize(direction);
-	up = glm::normalize(up);
-	right = glm::cross(direction, up);
-    setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
-    lookAt(position, position + direction, up);
-}
-
-float CustomCamera::getSpeed() {
-	return speed;
-}
-
-void CustomCamera::setSpeed(float speedIn) {
-	speed = speedIn;
-}
-
-float CustomCamera::getRotationSpeed() {
-	return rotationSpeed;
-}
-
-void CustomCamera::setRotationSpeed(float rotationSpeedIn) {
-	rotationSpeed = rotationSpeedIn;
-}
-
-float CustomCamera::getFieldOfView() {
-	return fieldOfView;
-}
-
-void CustomCamera::setFieldOfView(float fieldOfViewIn) {
-	fieldOfView = fieldOfViewIn;
-}
-
-float CustomCamera::getMaxFieldOfView() {
-	return maxFieldOfView;
-}
-
-void CustomCamera::setMaxFieldOfView(float maxFieldOfViewIn) {
-	maxFieldOfView = maxFieldOfViewIn;
-}
-
-float CustomCamera::getNearPlane() {
-	return nearPlane;
-}
-
-void CustomCamera::setNearPlane(float nearPlaneIn) {
-	nearPlane = nearPlaneIn;
-}
-
-float CustomCamera::getFarPlane() {
-	return farPlane;
-}
-
-void CustomCamera::setFarPlane(float farPlaneIn) {
-	farPlane = farPlaneIn;
-}
-
-void CustomCamera::zoom(float zoomIncrement) {
-	fieldOfView -= zoomIncrement; // Decreasing the FOV increases the "zoom"
-	fieldOfView = glm::min(fieldOfView, maxFieldOfView);
-	fieldOfView = glm::max(fieldOfView, 1.0f);
-	setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
-}
-
 // FlightCamera Class Method Implementations ==================================
 
-FlightCamera::FlightCamera(): CustomCamera() {
-}	
-	
 void
 FlightCamera::move(float distance) {
-	// Add the movement vector to the camera position
-	position += distance * direction;
-	// Set the camera view transform
-	lookAt(position, position + direction, up);
+	// Move the camera by distance in camera direction
+	move(distance * direction);
 }
 
 void
@@ -279,85 +197,28 @@ FlightCamera::roll(float rollIncrement) {
     lookAt(position, position + direction, up);
 }
 
-FlightCamera::FlightCameraBuilder FlightCamera::create() {
+FlightCameraBuilder
+FlightCamera::create() {
 	return FlightCameraBuilder();
 }
 
-FlightCamera::FlightCameraBuilder::FlightCameraBuilder()
+// FlightCameraBuilder Class Method Implementations ============================
+
+FlightCameraBuilder::FlightCameraBuilder()
 {
-	camera = new FlightCamera();
+    camera = std::dynamic_pointer_cast<CustomCamera<FlightCameraBuilder>>
+						(std::make_shared<FlightCamera::MakeSharedEnabler>());
 }
 
-FlightCamera::FlightCameraBuilder::~FlightCameraBuilder()
+std::shared_ptr<FlightCamera>
+FlightCameraBuilder::build()
 {
-	delete camera;
-}
-
-FlightCamera FlightCamera::FlightCameraBuilder::build() {
-	camera->init();
-	FlightCamera copyOfCamera = *camera;
-	return copyOfCamera;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withPosition(glm::vec3 position) {
-	camera->position = position;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withDirection(glm::vec3 direction) {
-	camera->direction = direction;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withUpDirection(glm::vec3 upDirection) {
-	camera->up = upDirection;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withSpeed(float speed) {
-	camera->speed = speed;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withRotationSpeed(float rotationSpeed) {
-	camera->rotationSpeed = rotationSpeed;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withFieldOfView(float fieldOfView) {
-	camera->fieldOfView = fieldOfView;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withMaxFieldOfView(float maxFieldOfView) {
-	camera->maxFieldOfView = maxFieldOfView;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withNearPlane(float nearPlane) {
-	camera->nearPlane = nearPlane;
-	return *this;
-}
-
-FlightCamera::FlightCameraBuilder&
-FlightCamera::FlightCameraBuilder::withFarPlane(float farPlane) {
-	camera->farPlane = farPlane;	
-	return *this;
+    std::dynamic_pointer_cast<FlightCamera>(camera)->init();
+    return std::dynamic_pointer_cast<FlightCamera>(camera);
 }
 
 // FPS_Camera Class Method Implementations =====================================
 
-FPS_Camera::FPS_Camera(): CustomCamera() {
-}	
-	
 void FPS_Camera::init() {
 	direction = glm::normalize(direction);
 	up = glm::normalize(up);
@@ -366,7 +227,7 @@ void FPS_Camera::init() {
 	forward = direction - glm::dot(direction, worldUp) * worldUp;
 	forwardLen = glm::length(forward);
 	forward = glm::normalize(forward);
-	CustomCamera::init();
+	CustomCamera<FPS_CameraBuilder>::init();
 }
 
 void FPS_Camera::move(float distance, Direction directionToMove) {
@@ -391,11 +252,8 @@ void FPS_Camera::move(float distance, Direction directionToMove) {
 			moveDirection = -up;	
 			break;
 	}
-
-	// Add the movement vector to the camera position
-	position += distance * moveDirection;
-	// Set the camera view transform
-	lookAt(position, position + direction, up);
+	// Move the camera by distance in the move direction
+	move(distance * moveDirection);
 }
 
 void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
@@ -436,83 +294,36 @@ void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
     lookAt(position, position + direction, up);
 }
 
-FPS_Camera::FPS_CameraBuilder FPS_Camera::create() {
+FPS_CameraBuilder
+FPS_Camera::create() {
 	return FPS_CameraBuilder();
 }
 
-FPS_Camera::FPS_CameraBuilder::FPS_CameraBuilder()
+// FPS_CameraBuilder Class Method Implementations ==============================
+
+FPS_CameraBuilder::FPS_CameraBuilder()
 {
-	camera = new FPS_Camera();
+    camera = std::dynamic_pointer_cast<CustomCamera<FPS_CameraBuilder>>
+						(std::make_shared<FPS_Camera::MakeSharedEnabler>());
 }
 
-FPS_Camera::FPS_CameraBuilder::~FPS_CameraBuilder()
+std::shared_ptr<FPS_Camera>
+FPS_CameraBuilder::build()
 {
-	delete camera;
+    std::dynamic_pointer_cast<FPS_Camera>(camera)->init();
+    return std::dynamic_pointer_cast<FPS_Camera>(camera);
 }
 
-FPS_Camera FPS_Camera::FPS_CameraBuilder::build() {
-	camera->init();
-	FPS_Camera copyOfCamera = *camera;
-	return copyOfCamera;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withPosition(glm::vec3 position) {
-	camera->position = position;
+FPS_CameraBuilder&
+FPS_CameraBuilder::withWorldUpDirection(glm::vec3 worldUp) {
+	std::dynamic_pointer_cast<FPS_Camera>(camera)->worldUp = worldUp;
 	return *this;
 }
 
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withDirection(glm::vec3 direction) {
-	camera->direction = direction;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withUpDirection(glm::vec3 upDirection) {
-	camera->up = upDirection;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withWorldUpDirection(glm::vec3 worldUp) {
-	camera->worldUp = worldUp;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withSpeed(float speed) {
-	camera->speed = speed;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withRotationSpeed(float rotationSpeed) {
-	camera->rotationSpeed = rotationSpeed;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withFieldOfView(float fieldOfView) {
-	camera->fieldOfView = fieldOfView;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withMaxFieldOfView(float maxFieldOfView) {
-	camera->maxFieldOfView = maxFieldOfView;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withNearPlane(float nearPlane) {
-	camera->nearPlane = nearPlane;
-	return *this;
-}
-
-FPS_Camera::FPS_CameraBuilder&
-FPS_Camera::FPS_CameraBuilder::withFarPlane(float farPlane) {
-	camera->farPlane = farPlane;	
+FPS_CameraBuilder&
+FPS_CameraBuilder::withWorldHalfHeight(float worldHalfHeight) {
+	std::dynamic_pointer_cast<FPS_Camera>(camera)
+										->worldHalfHeight = worldHalfHeight;
 	return *this;
 }
 
