@@ -89,7 +89,10 @@ namespace sre {
                                                                                                  // y the y coordinate of the viewport (default 0)
                                                                                                  // width the width of the viewport (default window width)
                                                                                                  // height the height of the viewport (default window height)
+        bool isChanged();                                        // Returns true if the camera has been changed since the last time the changed flag was reset
+        void resetChangedFlag();                                 // Reset the changed flag to false
     protected:
+        void setChangedFlag();
         enum class ProjectionType {
             Perspective,
             Orthographic,
@@ -98,6 +101,7 @@ namespace sre {
         };
         ProjectionType projectionType = ProjectionType::Orthographic;
     private:
+        bool m_isChanged = false;
         union {
             struct {
                 float fieldOfViewY;
@@ -147,6 +151,7 @@ namespace sre {
 		float getRotationSpeed();
 		void setRotationSpeed(float rotationSpeed);
 		// Set generic camera properties
+		void setPosition(glm::vec3 positionIn);
 		void setNearPlane(float nearPlaneIn);
 		void setFarPlane(float farPlaneIn);
 		// Set OrthographicProjection camera properties
@@ -301,6 +306,7 @@ CustomCamera<T>::CustomCamera() : Camera(),
 							 nearPlane {0.1f},
 							 farPlane {100.0f} {
 	maxFieldOfView = fieldOfView;
+	setChangedFlag();
 }	
 
 template<typename T>
@@ -325,11 +331,13 @@ void CustomCamera<T>::init() {
 		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
 	}
     lookAt(position, position + direction, up);
+	setChangedFlag();
 }
 
 template<typename T> void
 CustomCamera<T>::setSpeed(float speedIn) {
 	speed = speedIn;
+	setChangedFlag();
 }
 
 template<typename T> float
@@ -340,6 +348,7 @@ CustomCamera<T>::getSpeed() {
 template<typename T> void
 CustomCamera<T>::setRotationSpeed(float rotationSpeedIn) {
 	rotationSpeed = rotationSpeedIn;
+	setChangedFlag();
 }
 
 template<typename T> float
@@ -350,26 +359,51 @@ CustomCamera<T>::getRotationSpeed() {
 template<typename T> void
 CustomCamera<T>::setWorldHalfHeight(float worldHalfHeightIn) {
 	worldHalfHeight = worldHalfHeightIn;
+	setOrthographicProjection(worldHalfHeight, nearPlane, farPlane);
+	setChangedFlag();
 }
 
 template<typename T> void
 CustomCamera<T>::setFieldOfView(float fieldOfViewIn) {
 	fieldOfView = fieldOfViewIn;
+	if (fieldOfView > 0.0)
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	setChangedFlag();
 }
 
 template<typename T> void
 CustomCamera<T>::setMaxFieldOfView(float maxFieldOfViewIn) {
 	maxFieldOfView = maxFieldOfViewIn;
+	if (fieldOfView > 0.0)
+	{
+		fieldOfView = glm::min(fieldOfView, maxFieldOfView);
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	}
+	setChangedFlag();
+}
+
+template<typename T> void
+CustomCamera<T>::setPosition(glm::vec3 positionIn) { 
+	position = positionIn;
+	// Set the camera view transform
+	lookAt(position, position + direction, up);
+	setChangedFlag();
 }
 
 template<typename T> void
 CustomCamera<T>::setNearPlane(float nearPlaneIn) {
 	nearPlane = nearPlaneIn;
+	if (fieldOfView > 0.0)
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	setChangedFlag();
 }
 
 template<typename T> void
 CustomCamera<T>::setFarPlane(float farPlaneIn) {
 	farPlane = farPlaneIn;
+	if (fieldOfView > 0.0)
+		setPerspectiveProjection(fieldOfView, nearPlane, farPlane);
+	setChangedFlag();
 }
 
 template<typename T> void
@@ -377,6 +411,7 @@ CustomCamera<T>::move(glm::vec3 deltaVector) {
 	position += deltaVector;
 	// Set the camera view transform
 	lookAt(position, position + direction, up);
+	setChangedFlag();
 }
 
 template<typename T> void
@@ -393,6 +428,7 @@ CustomCamera<T>::zoom(float zoomIncrement) {
 		worldHalfHeight *= (1.0f + zoomIncrement);
 		setOrthographicProjection(worldHalfHeight, nearPlane, farPlane);
 	}
+	setChangedFlag();
 }
 
 // CustomCameraBuilder Class Method Implementations ============================

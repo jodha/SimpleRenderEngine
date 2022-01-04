@@ -27,6 +27,19 @@ namespace sre {
         projectionValue.orthographic.orthographicSize = 1;
         projectionValue.orthographic.nearPlane = -1;
         projectionValue.orthographic.farPlane = 1;
+        setChangedFlag();
+    }
+
+    bool Camera::isChanged() {
+        return m_isChanged;
+    }
+
+    void Camera::resetChangedFlag() {
+        m_isChanged = false;
+    }
+
+    void Camera::setChangedFlag() {
+        m_isChanged = true;
     }
 
     void Camera::setPerspectiveProjection(float fieldOfViewY, float nearPlane, float farPlane) {
@@ -34,6 +47,7 @@ namespace sre {
         projectionValue.perspective.nearPlane    = nearPlane;
         projectionValue.perspective.farPlane     = farPlane;
         projectionType = ProjectionType::Perspective;
+        setChangedFlag();
     }
 
     void Camera::setOrthographicProjection(float orthographicSize, float nearPlane, float farPlane) {
@@ -41,10 +55,12 @@ namespace sre {
         projectionValue.orthographic.nearPlane = nearPlane;
         projectionValue.orthographic.farPlane  = farPlane;
         projectionType = ProjectionType::Orthographic;
+        setChangedFlag();
     }
 
     void Camera::setWindowCoordinates(){
         projectionType = ProjectionType::OrthographicWindow;
+        setChangedFlag();
     }
 
     void Camera::lookAt(glm::vec3 eye, glm::vec3 at, glm::vec3 up) {
@@ -94,16 +110,19 @@ namespace sre {
 
     void Camera::setViewTransform(const glm::mat4 &viewTransform) {
         Camera::viewTransform = viewTransform;
+        setChangedFlag();
     }
 
     void Camera::setProjectionTransform(const glm::mat4 &projectionTransform) {
         memcpy(projectionValue.customProjectionMatrix, glm::value_ptr(projectionTransform), sizeof(glm::mat4));
         projectionType = ProjectionType::Custom;
+        setChangedFlag();
     }
 
     void Camera::setViewport(glm::vec2 offset, glm::vec2 size) {
         viewportOffset = offset;
         viewportSize = size;
+        setChangedFlag();
     }
 
     void Camera::setPositionAndRotation(glm::vec3 position, glm::vec3 rotationEulersDegrees) {
@@ -166,8 +185,9 @@ namespace sre {
 
 void
 FlightCamera::move(float distance) {
-	// Move the camera by distance in camera direction
-	move(distance * direction);
+    // Move the camera by distance in camera direction
+    move(distance * direction);
+    setChangedFlag();
 }
 
 void
@@ -183,6 +203,7 @@ FlightCamera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
     right = glm::cross(direction, up);
     // Calculate the view transform
     lookAt(position, position + direction, up);
+    setChangedFlag();
 }
 
 void
@@ -195,6 +216,7 @@ FlightCamera::roll(float rollIncrement) {
     right = glm::cross(direction, up);
     // Calculate the view transform (note that direction vector does not change)
     lookAt(position, position + direction, up);
+    setChangedFlag();
 }
 
 FlightCameraBuilder
@@ -228,6 +250,7 @@ void FPS_Camera::init() {
 	forwardLen = glm::length(forward);
 	forward = glm::normalize(forward);
 	CustomCamera<FPS_CameraBuilder>::init();
+    setChangedFlag();
 }
 
 void FPS_Camera::move(float distance, Direction directionToMove) {
@@ -253,7 +276,8 @@ void FPS_Camera::move(float distance, Direction directionToMove) {
 			break;
 	}
 	// Move the camera by distance in the move direction
-	move(distance * moveDirection);
+    move(distance * moveDirection);
+    setChangedFlag();
 }
 
 void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
@@ -292,6 +316,7 @@ void FPS_Camera::pitchAndYaw(float pitchIncrement, float yawIncrement) {
 
     // Calculate the view transform
     lookAt(position, position + direction, up);
+    setChangedFlag();
 }
 
 FPS_CameraBuilder
