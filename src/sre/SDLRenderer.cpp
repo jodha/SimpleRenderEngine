@@ -7,9 +7,13 @@
 
 #include <chrono>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <string>
 #include <sre/imgui_sre.hpp>
 #include <sre/Log.hpp>
 #include <sre/VR.hpp>
+#include "imgui.h"
 #include "sre/SDLRenderer.hpp"
 #define SDL_MAIN_HANDLED
 
@@ -17,7 +21,6 @@
 #include "emscripten.h"
 #endif
 #include "sre/impl/GL.hpp"
-
 
 #ifdef SRE_DEBUG_CONTEXT
 void GLAPIENTRY openglCallbackFunction(GLenum source,
@@ -100,6 +103,7 @@ namespace sre{
     SDLRenderer::SDLRenderer()
     :frameUpdate ([](float){}),
      frameRender ([](){}),
+     stopProgram ([this](){stopEventLoop();}),
      keyEvent ([](SDL_Event&){}),
      mouseEvent ([](SDL_Event&){}),
      controllerEvent ([](SDL_Event&){}),
@@ -128,37 +132,136 @@ namespace sre{
         using MilliSeconds = std::chrono::duration<float, std::chrono::milliseconds::period>;
         auto lastTick = Clock::now();
 
-        int numberOfEvents = 0;
+        int numberOfEvents;
+        processEvents(numberOfEvents);
+
+        // Determine whether to render frame for "minimalRendering" option
+        if (numberOfEvents > 0 || appUpdated)
+        {
+            appUpdated = false;
+            shouldDrawFrame = true;
+            if (minimalRendering)
+            {   // Draw at least two frames after each event: one to allowImGui
+                // to handle the event and one to process actions triggered by
+                // ImGui (e.g. draw #1 draws pressed down OK button, draw #2
+                // hides the window and executes actions resulting from OK).
+                // However, ImGui uses 10 frames to "fade" gray screen for modal
+                // dialogs: respect this feature by using 10 rendering frames.
+                // Ideally, set to 2, but check if ImGui is "fading" (then set
+                // to 10)
+                nMinimalRenderingFrames = 10;
+            }
+        }
+        else if (minimalRendering)
+        {
+            if (nMinimalRenderingFrames > 0) nMinimalRenderingFrames--;
+            else shouldDrawFrame = false;
+        }
+        // Update and draw frame, measure times, and swap window
+        {   // Measure time for event processing
+            auto tick = Clock::now();
+            deltaTimeEvent = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
+            lastTick = tick;
+        }
+        if (shouldDrawFrame)
+        {
+            frameUpdate(deltaTimeSec);
+            {   // Measure time for updating the frame
+                auto tick = Clock::now();
+                deltaTimeUpdate = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
+                lastTick = tick;
+            }
+            frameRender();
+            {   // Measure time for rendering the frame
+                auto tick = Clock::now();
+                deltaTimeRender = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
+                lastTick = tick;
+            }
+            r->swapWindow();
+            frameNumber++;
+        }
+        else
+        {
+            deltaTimeUpdate = 0.0f;
+            deltaTimeRender = 0.0f;
+        }
+    }
+
+    void
+    SDLRenderer::processEvents(int & numberOfEvents) {
+        numberOfEvents = 0;
+        bool recordedEvent = false;
         SDL_Event e;
+        if (m_playingBackEvents) {
+            while( SDL_PollEvent( &e) != 0 ) {
+                // Remove events in event queue by polling them. Note that this
+                // will prevent any user interaction during playback. Changing
+                // the SRE window title to reflect this is recommended.
+            }
+            if (!m_pausePlaybackOfEvents) {
+                pushRecordedEventsForNextFrameToSDL();
+            }
+        }
         //Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
+            if (m_recordingEvents) {
+                recordEvent(frameNumber, e);
+                recordedEvent = true;
+            }
+
             ImGuiIO& imguiIO = ImGui::GetIO();
             ImGui_SRE_ProcessEvent(&e);
+            auto key = e.key.keysym.sym;
+            bool hotKey;
 
             switch (e.type) {
                 case SDL_QUIT:
-                    running = false;
+                    stopProgram();
                     break;
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
-                    if (!imguiIO.WantCaptureKeyboard) keyEvent(e);
+                    // Dispatch key events to app (through keyEvent) if ImGui
+                    // does not want key event or key event is a hotkey
+                    hotKey   =  (key == SDLK_F1  || key == SDLK_F2
+                              || key == SDLK_F3  || key == SDLK_F4
+                              || key == SDLK_F5  || key == SDLK_F6
+                              || key == SDLK_F7  || key == SDLK_F8
+                              || key == SDLK_F9  || key == SDLK_F10
+                              || key == SDLK_F11 || key == SDLK_F12
+                              || key == SDLK_UP  || key == SDLK_DOWN);
+                    if (!imguiIO.WantCaptureKeyboard || hotKey)
+                        keyEvent(e);
                     break;
                 case SDL_MOUSEMOTION:
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP:
                 case SDL_MOUSEWHEEL:
+                    if (!imguiIO.WantCaptureMouse
+                                   && imGuiWantCaptureMousePrevious)
+                    {
+                        // If ImGui changed from wanting the mouse to not
+                        // wanting it, set the cursor to the regular cursor
+                        // (sometimes ImGui will not reset the cursor when
+                        // it no longer wants to capture)
+                        SetArrowCursor();
+                        // Block ImGui from setting mouse cursor: allow user set
+                        imguiIO.ConfigFlags
+                                      = ImGuiConfigFlags_NoMouseCursorChange;
+                    }
                     if (!imguiIO.WantCaptureMouse)
-                    {   // Block ImGui from setting mouse cursor (allow user to set cursor)
-                        imguiIO.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
-                        // Pass event
+                    {
+                        // Pass event to SRE
                         mouseEvent(e);
                     }
-                    else
-                    {   // Allow ImGui to set mouse cursor
-                        imguiIO.ConfigFlags = !ImGuiConfigFlags_NoMouseCursorChange;
-                        // Do not pass event
+                    else // imguiIO.WantCaptureMouse
+                    {
+                        // Allow ImGui to set mouse cursor
+                        imguiIO.ConfigFlags
+                                       = !ImGuiConfigFlags_NoMouseCursorChange;
+                        // Do not pass event to SRE
                     }
+                    imGuiWantCaptureMousePrevious = imguiIO.WantCaptureMouse; 
                     break;
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_CONTROLLERBUTTONDOWN:
@@ -188,49 +291,19 @@ namespace sre{
             }
             numberOfEvents++;
         }
-        // Determine whether to render frame for "minimalRendering" option
-        if (numberOfEvents > 0)
-        {
-            drawFrame = true;
-            if (minimalRendering)
-            {   // Draw at least two frames after each event: one to allow ImGui
-                // to handle the event and one to process actions triggered by
-                // ImGui (e.g. draw #1 draws pressed down OK button, draw #2
-                // hides the window and executes actions resulting from OK).
-                nMinimalRenderingFrames = 2;
-            }
-        }
-        else if (minimalRendering)
-        {
-            if (nMinimalRenderingFrames > 0) nMinimalRenderingFrames--;
-            else drawFrame = false;
-        }
-        // Update and draw frame, measure times, and swap window
-        {   // Measure time for event processing
-            auto tick = Clock::now();
-            deltaTimeEvent = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
-            lastTick = tick;
-        }
-        if (drawFrame)
-        {
-            frameUpdate(deltaTimeSec);
-            {   // Measure time for updating the frame
-                auto tick = Clock::now();
-                deltaTimeUpdate = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
-                lastTick = tick;
-            }
-            frameRender();
-            {   // Measure time for rendering the frame
-                auto tick = Clock::now();
-                deltaTimeRender = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
-                lastTick = tick;
-            }
-            r->swapWindow();
-        }
-        else
-        {
-            deltaTimeUpdate = 0.0f;
-            deltaTimeRender = 0.0f;
+        // Record two empty frames to ensure ImGui completes tasks. See
+        // comments under minimalRendering in in SDLRenderer::frame() 
+        if (m_recordingEvents && !recordedEvent
+                        && frameNumber <= lastEventFrameNumber + 2
+                        && frameNumber != lastEventFrameNumber
+                        && frameNumber != lastEmptyEventFrameNumber) {
+            int x, y;
+            m_recordingStream << frameNumber << " "
+                            << getMouseState(&x, &y) << " "
+                            << x << " " << y << " "
+                            << "#no event"
+                            << std::endl;
+            lastEmptyEventFrameNumber = frameNumber;
         }
     }
 
@@ -238,8 +311,34 @@ namespace sre{
         if (!window){
             LOG_INFO("SDLRenderer::init() not called");
         }
-
         running = true;
+        executeEventLoop(running);
+    }
+
+    void SDLRenderer::stopEventLoop() {
+        running = false;
+        runningEventSubLoop = false;
+        if (m_recordingEvents) {
+            stopRecordingEvents();
+        }
+    }
+
+    void SDLRenderer::startEventSubLoop() {
+        if (!running) return; // Only allow start as a sub-loop
+        if (runningEventSubLoop)
+            LOG_INFO("Multiple simultaneous render sub-loops attempted");
+        else
+        {
+            runningEventSubLoop = true;
+            executeEventLoop(runningEventSubLoop);
+        }
+    }
+
+    void SDLRenderer::stopEventSubLoop() {
+        runningEventSubLoop = false;
+    }
+
+    void SDLRenderer::executeEventLoop(bool& runEventLoop) {
 #ifdef EMSCRIPTEN
         emscripten_set_main_loop(update, 0, 1);
 #else
@@ -248,20 +347,18 @@ namespace sre{
         auto lastTick = Clock::now();
         float deltaTime = 0;
 
-        while (running){
+        while (runEventLoop){
             frame(deltaTime);
 
             auto tick = Clock::now();
             deltaTime = std::chrono::duration_cast<FpSeconds>(tick - lastTick).count();
 
-            // warn potential busy wait (SDL_Delay may truncate small numbers)
-            // https://forum.lazarus.freepascal.org/index.php?topic=35689.0
             while (deltaTime < timePerFrame){
                 Uint32 delayMs;
                 float delayS = timePerFrame - deltaTime;
                 if (!minimalRendering)
                 {   // Match frame rate exactly by underestimating delay
-                    // The while loop will fill the < 1 Microsecond gap 
+                    // The while loop will fill the < 1 Millisecond gap 
                     delayMs = static_cast<Uint32>(delayS * 1000.0f);
                 }
                 else
@@ -275,6 +372,21 @@ namespace sre{
             lastTick = tick;
         }
 #endif
+    }
+
+    void SDLRenderer::drawFrame() {
+        // The following two lines should be removed if possible (the drawFrame
+        // function should only render the frame and swap). Processing the
+        // events is currently necessary because the "up" stroke of the "Enter"
+        // key needs to be captured after the user has initiated a long
+        // calculation from ImGUI::InputText (if this is not done, the
+        // ImGui::InputText function will continue to think that the Enter key
+        // is still down and continue to return true, causing a large number
+        // of "Enter" strokes to get registered in the command log)).
+        int numEvents;
+        processEvents(numEvents);
+        frameRender();
+        r->swapWindow();
     }
 
     void SDLRenderer::startEventLoop(std::shared_ptr<VR> vr) {
@@ -297,10 +409,6 @@ namespace sre{
             deltaTime = std::chrono::duration_cast<FpSeconds>(tick - lastTick).count();
             lastTick = tick;
         }
-    }
-
-    void SDLRenderer::stopEventLoop() {
-        running = false;
     }
 
     void SDLRenderer::setWindowSize(glm::ivec2 size) {
@@ -366,13 +474,21 @@ namespace sre{
 
     glm::vec3 SDLRenderer::getLastFrameStats() {
         return {
-            deltaTimeEvent,deltaTimeUpdate,deltaTimeRender
+                deltaTimeEvent,deltaTimeUpdate,deltaTimeRender
         };
+    }
+
+    void SDLRenderer::SetArrowCursor() {
+        SDL_FreeCursor(cursor);
+        cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+        cursorType = Cursor::Arrow;
+        SDL_SetCursor(cursor);
     }
 
     void SDLRenderer::Begin(Cursor cursorStart) {
         if (cursor != NULL) {
-            LOG_ERROR("Last mouse cursor not freed in SDLRenderer::Begin");
+            if (cursorType != Cursor::Arrow)
+                LOG_ERROR("Last mouse cursor not freed in SDLRenderer::Begin");
             SDL_FreeCursor(cursor);
         }
         switch (cursorStart) {
@@ -397,17 +513,613 @@ namespace sre{
     }
 
     void SDLRenderer::End(Cursor cursorEnd) {
-        if (cursorEnd != cursorType)
+        if (cursorEnd != cursorType && cursorType != Cursor::Arrow)
             LOG_ERROR("Ending cursor not same as starting cursor in SDLRenderer");
-        cursorType = Cursor::Regular;
-        SDL_FreeCursor(cursor);
-        cursor = NULL;
+        SetArrowCursor();
     }
 
     void SDLRenderer::SetMinimalRendering(bool minimalRendering) {
         this->minimalRendering = minimalRendering;
+        if (!minimalRendering) this->shouldDrawFrame = true;
     }
 
+    void SDLRenderer::SetAppUpdated(bool appUpdated) {
+        this->appUpdated = appUpdated;
+    }
+
+    bool SDLRenderer::startRecordingEvents(std::string fileName) {
+        if (m_recordingEvents) {
+            return false;
+        }
+        m_recordingEvents = true;
+        m_recordingFileName = fileName;
+        std::stringstream().swap(m_recordingStream);
+        m_recordingStream << "# File containing imgui.ini file and recorded SDL"
+                        << " events for playback"
+                        << std::endl;
+        m_recordingStream << "#" << std::endl;
+        size_t imGuiSize;
+        const char * imGuiStr = ImGui::SaveIniSettingsToMemory(&imGuiSize);
+        m_recordingStream << "# imgui.ini size:" << std::endl; 
+        m_recordingStream << imGuiSize << std::endl; 
+        m_recordingStream << "# imgui.ini file:" << std::endl;
+        m_recordingStream << imGuiStr;
+        m_recordingStream << "# Recorded SDL events:" << std::endl
+            // Note: the format deviates slightly for e.key, where we append the
+            //       value for the SDL_GetModState function, which imgui needs
+            // Note: Some frames only have 'frame_number mouse_state mx my'
+            << "# Format: frame_number mouse_state mx my event_data #comment"
+            << std::endl;
+        return true;
+    }
+
+    // Record SDL events (mouse, keyboard, etc.) to "m_recordingStream" member
+    // variable and write to file in ::stopRecordingEvents(). Can read later to
+    // play back events, which enables testing scripts for ImGui interface 
+    void SDLRenderer::recordEvent(const int& frameNumber, const SDL_Event& e) {
+        // SDL Events  are defined in $SDL_HOME/include/SDL_events.h
+        //   typedef union SDL_Event ...
+        // SDL_Keysym is defined in $SDL_HOME/include/SDL_keyboard.h
+        //   typedef struct SDL_Keysym ...
+        // SDL_Scancode is defined in $SDL_HOME/include/SDL_scancode.h
+        //   typedef enum { SDL_SCANCODE_UNKNOWN = 0, ... } SDL_Scancode; 
+        //   i.e. integer (same as enums)
+        // SDL_Keycode is defined in $SDL_HOME/include/SDL_keycode.h
+        //   typedef Sint32 SDL_Keycode [i.e. signed (standard) int (integer)]
+        //   typedef enum {KMOD_NONE=0x0000, KMOD_LSHIF=0x0001, ...} SDL_Keymod
+        //     [which is returned by SDL_GetModState()] - state of 'mod' keys
+        // SDL types (like Uint8) are defined in $SDL_HOME/include/SDL_stdinc.h
+        //   typedef uint8_t Uint8 // An unsigned 8-bit integer, type = 1 byte
+        //   typedef uint16_t Uint16 // An unsigned 16-bit integer
+        //   typedef int32_t Sint32; // A signed 32-bit integer
+        // In C, uint8_t is defined in header stdint.h, guaranteed to be 8 bits
+        //   typedef unsigned char uint8_t;
+        //   typedef unsigned short uint16_t;
+        //   typedef unsigned long uint32_t;
+        //   typedef unsigned long long uint64_t;
+        //   typedef int int32_t;
+        // To properly print an unsigned char that is used to store bits (e.g.
+        // that is not being used to store characters), you need to "promote"
+        // the value using the bit operation "+" (needed for all 'Uint8'
+        // variables in the event structs). An alternative would be to print in
+        // hexadecimal format (example below). See discussion in StackOverflow:
+        // [https://]
+        // stackoverflow.com/questions/15585267/cout-not-printing-unsigned-char
+        // This is the example for printing in hexadecimal format:
+        // std::cout << std::showbase // show the 0x prefix
+        //      << std::internal      // fill between the prefix and the number
+        //      << std::setfill('0'); // fill with 0s
+        // std::cout << std::hex << std::setw(4) << value 
+        int x, y;
+        switch (e.type) {
+            case SDL_QUIT:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << "quit" << " "
+                    << "#end program"
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            case SDL_TEXTINPUT:
+                if (!m_pauseRecordingOfTextEvents) {
+                    m_recordingStream << frameNumber << " "
+                        << getMouseState(&x, &y) << " "
+                        << x << " " << y << " "
+                        << e.text.type << " "
+                        << e.text.timestamp << " "
+                        << e.text.windowID << " "
+                        << "\"" << e.text.text << "\"" << " "
+                        << "#text "
+                        << e.text.text
+                        << std::endl;
+                    lastEventFrameNumber = frameNumber;
+                }
+                break;
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << e.key.type << " "
+                    << e.key.timestamp << " "
+                    << e.key.windowID << " "
+                    // Promote 8-bit integers (see notes above)
+                    << +e.key.state << " "
+                    << +e.key.repeat << " "
+                    << +e.key.padding2 << " "
+                    << +e.key.padding3 << " "
+                    << e.key.keysym.scancode << " "
+                    << e.key.keysym.sym << " "
+                    << +e.key.keysym.mod << " "
+                    << getKeymodState() << " "
+                    << "#key "
+                    << (e.key.state == SDL_PRESSED ? "pressed" : "released")
+                    << " '" << char(e.key.keysym.sym) << "'"
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            case SDL_MOUSEMOTION:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << e.motion.type << " "
+                    << e.motion.timestamp << " "
+                    << e.motion.windowID << " "
+                    << e.motion.which << " "
+                    << e.motion.state << " "
+                    << e.motion.x << " "
+                    << e.motion.y << " "
+                    << e.motion.xrel << " "
+                    << e.motion.yrel << " "
+                    << "#motion (" 
+                    << (e.motion.state == SDL_PRESSED ? "pressed" : "released")
+                    << ")"
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << e.button.type << " "
+                    << e.button.timestamp << " "
+                    << e.button.windowID << " "
+                    << e.button.which << " "
+                    // Promote 8-bit integers (see notes above)
+                    << +e.button.button << " "
+                    << +e.button.state << " "
+                    << +e.button.clicks << " "
+                    << +e.button.padding1 << " "
+                    << e.button.x << " "
+                    << e.button.y << " "
+                    << "#button " 
+                    << (e.button.state == SDL_PRESSED ? "pressed" : "released")
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            case SDL_MOUSEWHEEL:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << e.wheel.type << " "
+                    << e.wheel.timestamp << " "
+                    << e.wheel.windowID << " "
+                    << e.wheel.which << " "
+                    << e.wheel.x << " "
+                    << e.wheel.y << " "
+                    << e.wheel.direction << " "
+                    << "#wheel" 
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            case SDL_CONTROLLERAXISMOTION:
+            case SDL_CONTROLLERBUTTONDOWN:
+            case SDL_CONTROLLERBUTTONUP:
+            case SDL_CONTROLLERDEVICEADDED:
+            case SDL_CONTROLLERDEVICEREMOVED:
+            case SDL_CONTROLLERDEVICEREMAPPED:
+                LOG_ERROR("Controller 'record event' called but not processed");
+                break;
+            case SDL_JOYAXISMOTION:
+            case SDL_JOYBALLMOTION:
+            case SDL_JOYHATMOTION:
+            case SDL_JOYBUTTONDOWN:
+            case SDL_JOYBUTTONUP:
+            case SDL_JOYDEVICEADDED:
+            case SDL_JOYDEVICEREMOVED:
+                LOG_ERROR("Joystick 'record event' called but not processed");
+                break;
+            case SDL_FINGERDOWN:
+            case SDL_FINGERUP:
+            case SDL_FINGERMOTION:
+                m_recordingStream << frameNumber << " "
+                    << getMouseState(&x, &y) << " "
+                    << x << " " << y << " "
+                    << e.tfinger.type << " "
+                    << e.tfinger.timestamp << " "
+                    << e.tfinger.touchId << " "
+                    << e.tfinger.fingerId << " "
+                    << e.tfinger.x << " "
+                    << e.tfinger.y << " "
+                    << e.tfinger.dx << " "
+                    << e.tfinger.dy << " "
+                    << e.tfinger.pressure << " "
+                    << e.tfinger.windowID << " "
+                    << "#tfinger" 
+                    << std::endl;
+                lastEventFrameNumber = frameNumber;
+                break;
+            default:
+                // Record two empty frames to ensure ImGui completes tasks. See
+                // comments under minimalRendering in in SDLRenderer::frame() 
+                if (frameNumber <= lastEventFrameNumber + 2
+                                && frameNumber != lastEventFrameNumber
+                                && frameNumber != lastEmptyEventFrameNumber) {
+                    m_recordingStream << frameNumber << " "
+                                    << getMouseState(&x, &y) << " "
+                                    << x << " " << y << " "
+                                    << "#no event"
+                                    << std::endl;
+                    lastEmptyEventFrameNumber = frameNumber;
+                }
+                break;
+        }
+    }
+
+    SDL_Event SDLRenderer::getNextRecordedEvent(bool& endOfFile) {
+        SDL_Event e;
+        e.type = 0;
+        endOfFile = false;
+        frameNumber = -99; // Indicates error
+        std::string eventLineString;
+        bool commentedLine = true;
+        while (commentedLine) {
+            std::getline(m_playbackStream, eventLineString);
+            if (!m_playbackStream || eventLineString[0] != '#') {
+                commentedLine = false;
+            }
+        }
+        std::istringstream eventLine(eventLineString);
+        if (!m_playbackStream || !eventLine) {
+            if (m_playbackStream.eof()) {
+                endOfFile = true;
+            } else {
+                LOG_ERROR("Error getting line from m_playbackStream");
+            }
+            return e;
+        }
+        // The value for frame number is only used for
+        // nextRecordedFramePeek(), but we need to advance the stream
+        eventLine >> frameNumber;
+        if (!eventLine) {
+            LOG_ERROR("Error getting frame number from m_playbackStream");
+            return e;
+        }
+        eventLine >> m_playbackMouseState
+                  >> m_playbackMouse_x >> m_playbackMouse_y;
+        if (!eventLine) {
+            LOG_ERROR("Error getting mouse information from m_playbackStream");
+            return e;
+        }
+        eventLine >> e.type;
+        if (!eventLine) {
+            // No event associated with frame
+            SDL_Event emptyEvent;
+            emptyEvent.type = 0;
+            return emptyEvent;
+        }
+        std::string textInput;
+        switch (e.type) {
+            case SDL_QUIT:
+                break;
+            case SDL_TEXTINPUT:
+                eventLine
+                    >> e.text.timestamp
+                    >> e.text.windowID
+                    >> std::quoted(textInput);
+                if (textInput.length() <= SDL_TEXTINPUTEVENT_TEXT_SIZE) {
+                    strcpy(e.text.text, textInput.c_str());
+                } else {
+                    LOG_ERROR("Text from playback stream too long for SDL");
+                }
+                break;
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                int keyState, repeat, padding2, padding3;
+                int scancode, sym, mod, modState;
+                eventLine
+                    >> e.key.timestamp
+                    >> e.key.windowID
+                    >> keyState
+                    >> repeat
+                    >> padding2
+                    >> padding3
+                    >> scancode
+                    >> sym
+                    >> mod
+                    >> modState;
+                // stringstream will not correctly read into 8-bit integers
+                // and SDL types. Hence, read ints and cast to the variables
+                e.key.state = static_cast<Uint8>(keyState);
+                e.key.repeat = static_cast<Uint8>(repeat);
+                e.key.padding2 = static_cast<Uint8>(padding2);
+                e.key.padding3 = static_cast<Uint8>(padding3);
+                e.key.keysym.scancode = static_cast<SDL_Scancode>(scancode);
+                e.key.keysym.sym = static_cast<SDL_Keycode>(sym);
+                e.key.keysym.mod = static_cast<Uint16>(mod);
+                m_playbackKeymodState = static_cast<SDL_Keymod>(modState);
+                break;
+            case SDL_MOUSEMOTION:
+                eventLine
+                    >> e.motion.timestamp
+                    >> e.motion.windowID
+                    >> e.motion.which
+                    >> e.motion.state
+                    >> e.motion.x
+                    >> e.motion.y
+                    >> e.motion.xrel
+                    >> e.motion.yrel;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+                int button, buttonState, clicks, padding1;
+                eventLine
+                    >> e.button.timestamp
+                    >> e.button.windowID
+                    >> e.button.which
+                    >> button
+                    >> buttonState
+                    >> clicks
+                    >> padding1
+                    >> e.button.x
+                    >> e.button.y;
+                // 8-bit variables need to be explicitly cast (see note above)
+                e.button.button = static_cast<Uint8>(button);
+                e.button.state = static_cast<Uint8>(buttonState);
+                e.button.clicks = static_cast<Uint8>(clicks);
+                e.button.padding1 = static_cast<Uint8>(padding1);
+                break;
+            case SDL_MOUSEWHEEL:
+                eventLine
+                    >> e.wheel.timestamp
+                    >> e.wheel.windowID
+                    >> e.wheel.which
+                    >> e.wheel.x
+                    >> e.wheel.y
+                    >> e.wheel.direction;
+                break;
+            case SDL_CONTROLLERAXISMOTION:
+            case SDL_CONTROLLERBUTTONDOWN:
+            case SDL_CONTROLLERBUTTONUP:
+            case SDL_CONTROLLERDEVICEADDED:
+            case SDL_CONTROLLERDEVICEREMOVED:
+            case SDL_CONTROLLERDEVICEREMAPPED:
+                LOG_ERROR("Joystick event in m_playbackStream not processed");
+                break;
+            case SDL_JOYAXISMOTION:
+            case SDL_JOYBALLMOTION:
+            case SDL_JOYHATMOTION:
+            case SDL_JOYBUTTONDOWN:
+            case SDL_JOYBUTTONUP:
+            case SDL_JOYDEVICEADDED:
+            case SDL_JOYDEVICEREMOVED:
+                LOG_ERROR("Joystick event in m_playbackStream not processed");
+                break;
+            case SDL_FINGERDOWN:
+            case SDL_FINGERUP:
+            case SDL_FINGERMOTION:
+                eventLine
+                    >> e.tfinger.timestamp
+                    >> e.tfinger.touchId
+                    >> e.tfinger.fingerId
+                    >> e.tfinger.x
+                    >> e.tfinger.y
+                    >> e.tfinger.dx
+                    >> e.tfinger.dy
+                    >> e.tfinger.pressure
+                    >> e.tfinger.windowID;
+                break;
+            default:
+                LOG_ERROR("Encountered unknown event in m_playbackStream");
+                break;
+        }
+        if (!eventLine) {
+            // Log this error, but continue on. Because event playback is
+            // intended to be a developer feature for testing, minimal time has
+            // been invested in productizing error checking for this feature
+            LOG_ERROR("Error reading event from m_playbackStream");
+        }
+        return e;
+    }
+
+    // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of
+    // recorded events
+    Uint32 SDLRenderer::getMouseState(int* x, int* y) {
+        Uint32 mouseState;
+        if (m_playingBackEvents) {
+            *x = m_playbackMouse_x;
+            *y = m_playbackMouse_y;
+            mouseState = m_playbackMouseState;
+        } else {
+            mouseState = SDL_GetMouseState(x, y);
+        }
+        return mouseState;
+    }
+
+    // Intercept calls to SDL_GetModState for Dear ImGui during playback of
+    // recorded events
+    SDL_Keymod SDLRenderer::getKeymodState() {
+        SDL_Keymod keymodState;
+        if (m_playingBackEvents) {
+            keymodState = m_playbackKeymodState;
+        } else {
+            keymodState = SDL_GetModState();
+        }
+        return keymodState;
+    }
+
+    bool SDLRenderer::stopRecordingEvents() {
+        bool success = true;
+        if (!m_recordingEvents) {
+            return success = false;
+        }
+        std::ofstream outFile(m_recordingFileName, std::ios::out);
+        if(outFile) {
+            outFile << m_recordingStream.str();
+            outFile.close();
+            std::stringstream().swap(m_recordingStream);
+        } else {
+            std::stringstream errorStream;
+            errorStream << "File " << m_recordingFileName 
+                << " could not be opened." << std::endl;
+            LOG_ERROR(errorStream.str().c_str());
+            success = false;
+        }
+        m_recordingEvents = false;
+        return success;
+    }
+
+    bool SDLRenderer::playBackRecordedEvents(std::string fileName) {
+        // Read recorded events and write out events from playback
+        bool success = true;
+        if (m_recordingEvents) {
+            return success = false;
+        }
+        if (!readRecordedEvents(fileName)) {
+            return success = false;
+        }
+        m_playingBackEvents = true;
+        // Debugging code
+        // SDL_Event e;
+        // int nextFrame;
+        // bool endOfFile = false;
+        // if (!startRecordingEvents("playback_test.log")) {
+        //     return success = false;
+        // }
+        // while (!endOfFile) {
+        //     e = getNextRecordedEvent(nextFrame, endOfFile);
+        //     if (!endOfFile) {
+        //         recordEvent(nextFrame, e);
+        //     }
+        // }
+        // if (!stopRecordingEvents()) {
+        //     return success = false;
+        // }
+        // m_playingBackEvents = false;
+        return success;
+    }
+
+    bool SDLRenderer::readRecordedEvents(std::string fileName) {
+        bool success = true;
+        if (m_recordingEvents) {
+            LOG_ERROR("Cannot read a recording while recording events");
+            return success = false;
+        }
+        std::ifstream inFile(fileName, std::ios::in);
+        if(inFile) {
+            // Read Imgui character stream size
+            size_t imGuiSize;
+            const char * imGuiStr;
+            bool endOfFile = false;
+            std::string fileLineString;
+            bool commentedLine = true;
+            while (commentedLine) {
+                std::getline(inFile, fileLineString);
+                if (!inFile || fileLineString[0] != '#') {
+                    commentedLine = false;
+                }
+            }
+            std::istringstream fileLine(fileLineString);
+            if (!inFile || !fileLine) {
+                if (inFile.eof()) {
+                    endOfFile = true;
+                } else {
+                    LOG_ERROR("Error getting line from inFile");
+                }
+                return success = false;
+            }
+            fileLine >> imGuiSize;
+            if (!fileLine) {
+                LOG_ERROR("Error getting imgui.ini file size from inFile");
+                return success = false;
+            }
+            std::getline(inFile, fileLineString);
+            if (!inFile || fileLineString[0] != '#') {
+                LOG_ERROR("Expected '#' after reading imgui.ini file size");
+                return success = false;
+            }
+            // Read the imgui.ini character stream
+            char c;
+            std::stringstream imGuiStream;
+            for (int i = 0; i < imGuiSize; i++) {
+                if (inFile.get(c)) {
+                    imGuiStream << c;
+                } else {
+                    LOG_ERROR("Error reading imgui.ini file from inFile");
+                    return success = false;
+                }
+            }
+            // Load the imgui.ini character stream into ImGui
+            ImGui::LoadIniSettingsFromMemory(imGuiStream.str().c_str(), imGuiSize);
+            // Read the rest of file into the 'm_playbackStream' member variable
+            std::stringstream().swap(m_playbackStream);
+            while (inFile.get(c)) {
+                m_playbackStream << c;
+            }
+            inFile.close();
+        } else {
+            std::stringstream errorStream;
+            errorStream << "File " << fileName 
+                << " could not be opened." << std::endl;
+            LOG_ERROR(errorStream.str().c_str());
+            success = false;
+        }
+        return success;
+    }
+
+    bool SDLRenderer::playingBackEvents() {
+        return m_playingBackEvents;
+    }
+
+    void SDLRenderer::setPausePlaybackOfEvents(const bool pause) {
+        m_pausePlaybackOfEvents = pause;
+    }
+
+    void SDLRenderer::setPauseRecordingOfTextEvents(const bool pause) {
+        m_pauseRecordingOfTextEvents = pause;
+    }
+
+    bool SDLRenderer::pushRecordedEventsForNextFrameToSDL() {
+        // Push events in m_playbackStream associated with next frame to SDL
+        // event queue. Report any errors, but continue to push events.
+        bool success = true;
+        bool endOfFile = false;
+        SDL_Event event;
+        int nextFrame = nextRecordedFramePeek();
+        m_playbackFrame = nextFrame;
+        while (nextFrame == m_playbackFrame && !endOfFile) {
+            event = getNextRecordedEvent(endOfFile);
+            SDL_WarpMouseInWindow(window, m_playbackMouse_x, m_playbackMouse_y);
+            if (!endOfFile && SDL_PushEvent(&event) != 1) {
+                LOG_ERROR("Error pushing event to queue");
+                LOG_ERROR(SDL_GetError());
+                SDL_ClearError();
+                success = false;
+            }
+            nextFrame = nextRecordedFramePeek();
+        }
+        if (endOfFile) {
+            m_playingBackEvents = false;
+        } else {
+            m_playbackFrame = nextFrame;
+        }
+        return success;
+    }
+
+    int SDLRenderer::nextRecordedFramePeek() {
+        char c;
+        bool getNextChar = true;
+        std::vector<char> digits;
+        while (m_playbackStream && getNextChar && m_playbackStream.get(c)) {
+            if (isdigit(c)) {
+                digits.push_back(c);
+            } else {
+                getNextChar = false;
+                m_playbackStream.unget();
+            }
+        }
+        std::stringstream numberString;
+        for (int i = 0; i < digits.size(); i++) {
+            numberString << digits[i];
+            m_playbackStream.unget();
+        }
+        int nextFrame;
+        numberString >> nextFrame;
+        return nextFrame;
+    }
+        
     SDLRenderer::InitBuilder::~InitBuilder() {
         build();
     }
