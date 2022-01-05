@@ -292,7 +292,7 @@ namespace sre {
         if (!vertexShader){
             auto extension = source.rfind("#extension");
             // insert precision after extensions
-            long insertPrecisionPos = string::npos;
+	    string::size_type insertPrecisionPos = string::npos;
             if (extension != string::npos){
                 insertPrecisionPos = source.find('\n',extension);
             } else {
