@@ -21,6 +21,31 @@ namespace sre {
         setFromLinear(linearColor);
     }
 
+	const Color&
+	Color::operator=(const Color& color) {
+		r = color.r;
+		g = color.g;
+		b = color.b;
+		a = color.a;
+		return *this;
+	}
+
+	bool
+	Color::operator==(const Color& color) {
+		if (r == color.r && g == color.g && b == color.b && a == color.a)
+			return true;
+		else
+			return false;
+	}
+
+	bool
+	Color::operator!=(const Color& color) {
+		if (*this == color)
+			return false;
+		else
+			return true;
+	}
+
     float& Color::operator[] (int index){
         switch (index){
             case 0:
