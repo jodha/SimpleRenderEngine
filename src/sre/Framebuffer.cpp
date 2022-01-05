@@ -193,11 +193,11 @@ namespace sre{
         }
         auto framebuffer = new Framebuffer(name);
         framebuffer->size = size;
-		// Hardwire the number of samples to 8, should check GL_MAX_SAMPLES
-		GLsizei msaa = 8;
-
-		using namespace std;
-		glEnable(GL_MULTISAMPLE);
+        // Hardwire the number of samples to 4, should check GL_MAX_SAMPLES
+        // This needs to be consistent with the use of multisample textures
+        // For this reason, it should not be hardwired but should be an option
+        GLsizei msaa = 4;
+        glEnable(GL_MULTISAMPLE);
         glGenFramebuffers(1, &(framebuffer->frameBufferObjectId));
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferObjectId);
 
