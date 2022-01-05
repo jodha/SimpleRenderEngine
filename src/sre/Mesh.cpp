@@ -29,7 +29,7 @@ class Material;
 namespace sre {
     uint16_t Mesh::meshIdCount = 0;
 
-    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn)
+    Mesh::Mesh(std::map<std::string,std::vector<float>>&& attributesFloat, std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string, std::vector<glm::vec3>>&& attributesVec3, std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::i32vec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology, std::string name, RenderStats& renderStats, float lineWidth, glm::vec3 location, glm::vec3 rotation, glm::vec3 scaling, std::shared_ptr<Material> material)
     {
         meshId = meshIdCount++;
         if ( Renderer::instance == nullptr){
@@ -45,10 +45,11 @@ namespace sre {
                meshTopology,
                name,
                renderStats,
-               locationIn,
-               rotationIn,
-               scalingIn,
-               materialIn);
+               lineWidth,
+               location,
+               rotation,
+               scaling,
+               material);
         Renderer::instance->meshes.emplace_back(this);
     }
 
@@ -97,6 +98,7 @@ namespace sre {
             setVertexAttributePointers(shader);
             bindIndexSet();
         }
+        glLineWidth(lineWidth);
     }
     void Mesh::bindIndexSet(){
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId);
@@ -110,7 +112,7 @@ namespace sre {
         return vertexCount;
     }
 
-    void Mesh::update(std::map<std::string,std::vector<float>>&& attributesFloat,std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string,std::vector<glm::vec3>>&& attributesVec3,std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::ivec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology,std::string name,RenderStats& renderStats, glm::vec3 locationIn, glm::vec3 rotationIn, glm::vec3 scalingIn, std::shared_ptr<Material> materialIn) {
+    void Mesh::update(std::map<std::string,std::vector<float>>&& attributesFloat,std::map<std::string,std::vector<glm::vec2>>&& attributesVec2, std::map<std::string,std::vector<glm::vec3>>&& attributesVec3,std::map<std::string,std::vector<glm::vec4>>&& attributesVec4,std::map<std::string,std::vector<glm::ivec4>>&& attributesIVec4, std::vector<std::vector<uint32_t>> &&indices, std::vector<MeshTopology> meshTopology, std::string name, RenderStats& renderStats, float lineWidth, glm::vec3 location, glm::vec3 rotation, glm::vec3 scaling, std::shared_ptr<Material> material) {
         this->meshTopology = meshTopology;
         this->name = name;
         meshId = meshIdCount++;
@@ -157,10 +159,11 @@ namespace sre {
         renderStats.meshBytes += dataSize;
         renderStats.meshBytesAllocated += dataSize;
 
-        location = locationIn;
-        rotation = rotationIn;
-        scaling = scalingIn;
-        material = materialIn;
+        this->lineWidth = lineWidth;
+        this->location = location;
+        this->rotation = rotation;
+        this->scaling = scaling;
+        this->material = material;
     }
 
     void Mesh::updateIndexBuffers() {
@@ -230,7 +233,8 @@ namespace sre {
 
             bool attributeFoundInMesh = meshAttribute != attributeByName.end();
             // allows mesh attributes to be smaller than shader attributes. E.g. if mesh is Vec2 and shader is Vec4, then OpenGL automatically append
-            // (z = 0.0, w=1.0) to the attribute in the shader currently only supported from vec2 or vec3 (not float)
+            // (z = 0.0, w=1.0) to the attribute in the shader
+            // currently only supported from vec2 or vec3 (not float)
             // TODO: add support float - vecX
             bool equalType = attributeFoundInMesh && (shaderAttribute.second.type == meshAttribute->second.attributeType ||
                     (shaderAttribute.second.type >= GL_FLOAT_VEC2 && shaderAttribute.second.type <= GL_FLOAT_VEC4 && shaderAttribute.second.type>= meshAttribute->second.attributeType)
@@ -349,12 +353,12 @@ namespace sre {
         return location;
     }
 
-    void Mesh::setLocation(glm::vec3 locationIn) {
-        location = locationIn;
+    void Mesh::setLocation(glm::vec3 location) {
+        this->location = location;
     }
 
-    void Mesh::setRotation(glm::vec3 rotationIn) {
-        rotation = glm::radians(rotationIn);
+    void Mesh::setRotation(glm::vec3 rotation) {
+        this->rotation = glm::radians(rotation);
     }
 
     void Mesh::setScaling(glm::vec3 newDirectionalScaling) {
@@ -365,15 +369,15 @@ namespace sre {
         scaling = glm::vec3(newScaling, newScaling, newScaling);
     }
 
-    void Mesh::setMaterial(std::shared_ptr<Material> newMaterial)   {
-        material = newMaterial;
+    void Mesh::setMaterial(std::shared_ptr<Material> material)  {
+        this->material = material;
     }
 
     void Mesh::draw(RenderPass& rp) {
         std::shared_ptr<Mesh> thisMesh = shared_from_this();    
         rp.draw(thisMesh, glm::translate(location)
-                        * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
-                        * glm::scale(scaling),
+                          * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+                          * glm::scale(scaling),
                           material);
     }
 
@@ -511,28 +515,33 @@ namespace sre {
         return attributeByName.find(name) != attributeByName.end();
     }
 
-    Mesh::MeshBuilder& Mesh::MeshBuilder::withLocation(glm::vec3 locationIn) {
-        location = locationIn;
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withLineWidth(float lineWidth) {
+        this->lineWidth = lineWidth;
         return *this;
     }
 
-    Mesh::MeshBuilder& Mesh::MeshBuilder::withRotation(glm::vec3 rotationIn) {
-        rotation = glm::radians(rotationIn);
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withLocation(glm::vec3 location) {
+        this->location = location;
         return *this;
     }
 
-    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(glm::vec3 directionalScalingIn) {
-        scaling = directionalScalingIn;
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withRotation(glm::vec3 rotation) {
+        this->rotation = glm::radians(rotation);
         return *this;
     }
 
-    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(float scalingIn) {
-        scaling = glm::vec3(scalingIn, scalingIn, scalingIn);
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(glm::vec3 directionalScaling) {
+        this->scaling = directionalScaling;
         return *this;
     }
 
-    Mesh::MeshBuilder& Mesh::MeshBuilder::withMaterial(std::shared_ptr<Material> materialIn) {
-        material = materialIn;
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withScaling(float scaling) {
+        this->scaling = glm::vec3(scaling, scaling, scaling);
+        return *this;
+    }
+
+    Mesh::MeshBuilder& Mesh::MeshBuilder::withMaterial(std::shared_ptr<Material> material) {
+        this->material = material;
         return *this;
     }
 
@@ -759,13 +768,13 @@ namespace sre {
         }
         if (updateMesh != nullptr){
             renderStats.meshBytes -= updateMesh->getDataSize();
-            updateMesh->update(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices), meshTopology,name,renderStats, location, rotation, scaling, material);
+            updateMesh->update(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices), meshTopology, name, renderStats, lineWidth, location, rotation, scaling, material);
 
 
             return updateMesh->shared_from_this();
         }
 
-        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology,name,renderStats, location, rotation, scaling, material);
+        auto res = new Mesh(std::move(this->attributesFloat), std::move(this->attributesVec2), std::move(this->attributesVec3), std::move(this->attributesVec4), std::move(this->attributesIVec4), std::move(indices),meshTopology, name, renderStats, lineWidth, location, rotation, scaling, material);
         renderStats.meshCount++;
 
         return std::shared_ptr<Mesh>(res);
@@ -1099,6 +1108,10 @@ namespace sre {
     }
 
     Mesh::MeshBuilder &Mesh::MeshBuilder::withWirePlane(int numIntervals, float length) {
+    // This can be done much better by drawing single, long, horizontal lines
+    // and single, long vertical lines and then drawing them on top of each
+    // other, rather than calculating and storing each intersection point and
+    // then drawing a long list of segments that renders slowly!
         using namespace glm;
         using namespace std;
 
@@ -1258,6 +1271,114 @@ namespace sre {
     Mesh::MeshBuilder& Mesh::MeshBuilder::withRecomputeTangents(bool enabled){
         recomputeTangents = enabled;
         return *this;
+    }
+
+    // LineContainer Class =====================================================
+
+    void LineContainer::add(const std::vector<glm::vec3> & verticesIn,
+                            const Color & colorIn, const float & lineWidthIn,
+                            const MeshTopology & topologyIn)
+    {
+        assert(m_colors.size() == m_topologies.size());
+        assert(m_colors.size() == m_lineWidths.size());
+        assert(m_colors.size() == m_status.size());
+        // m_vertices.size() may be larger than others -- see note in ::clear
+        assert(m_colors.size() <= m_vertices.size());
+
+        bool found = false;
+        // Size used is same for all vectors -- use m_colors to set index
+        for (int i = 0; i < m_colors.size(); i++) {
+            if (m_colors[i] == colorIn && m_topologies[i] == topologyIn
+                                       && m_lineWidths[i] == lineWidthIn) {
+                m_status[i] = MeshStatus::Uninitialized;
+                m_vertices[i].insert(m_vertices[i].end(), verticesIn.begin(), 
+                                                          verticesIn.end());
+                found = true;
+            }
+        }
+
+        if (!found) {
+            m_colors.push_back(colorIn);    
+            // Note: the Material class has a getColor() function, but it
+            // returns a color constructed from the shader that it stores. This
+            // construction from the shader results in small changes in the rgb
+            // values of the colors that prevent accurate comparison.
+            auto material = sre::Shader::getUnlit()->createMaterial();
+            material->setColor(colorIn);
+            m_materials.push_back(material);
+            m_lineWidths.push_back(lineWidthIn);    
+            m_topologies.push_back(topologyIn); 
+            m_status.push_back(MeshStatus::Uninitialized);
+            m_meshes.push_back(nullptr);
+
+            // Use m_colors to set m_vertices index (see note in ::clear)
+            int i = m_colors.size()-1;
+            if (i == m_vertices.size())
+            {
+                m_vertices.push_back(std::vector<glm::vec3>());
+            }
+            assert(i < m_vertices.size());
+            m_vertices[i] = verticesIn;
+        }
+    }
+
+    void LineContainer::draw(RenderPass& renderPass)
+    {
+        assert(m_colors.size() == m_status.size());
+        assert(m_colors.size() == m_meshes.size());
+        assert(m_colors.size() == m_materials.size());
+        assert(m_colors.size() == m_lineWidths.size());
+        assert(m_colors.size() == m_topologies.size());
+        assert(m_colors.size() <= m_vertices.size());
+
+        // Size used is same for all vectors -- use m_colors to set index
+        for (int i = 0; i < m_colors.size(); i++) {
+            if (m_status[i] == MeshStatus::Uninitialized) {
+                m_meshes[i] = sre::Mesh::create()
+                                    .withMaterial(m_materials[i])
+                                    .withLineWidth(m_lineWidths[i])
+                                    .withMeshTopology(m_topologies[i])
+                                    .withPositions(m_vertices[i])
+                                    .build();
+                m_status[i] = MeshStatus::Initialized;
+            }
+            m_meshes[i]->draw(renderPass);
+        }
+    }
+
+    void LineContainer::clear()
+    {
+        m_colors.clear();
+        m_materials.clear();
+        m_lineWidths.clear();
+        m_topologies.clear();
+        m_meshes.clear();
+        m_status.clear();
+        // Clearing entire m_vertices vector clears the allocated space for each
+        // m_vertices[i] vector (resize(0) gives same result). Instead, clear
+        // each m_vertices[i] vector, which will retain the allocated space for
+        // each m_vertices[i] vector, which allows reuse of the space. The
+        // result is that m_vertices.size() will not be set to zero. This
+        // creates a small amount of complexity in the ::add function above.
+        for(int i = 0; i < m_vertices.size(); i++)
+        {
+            m_vertices[i].clear();
+        }
+    }
+
+    void LineContainer::output()
+    {
+        std::cout << "m_colors.size() = " << m_colors.size()
+                  << "  .capacity() = " << m_colors.capacity()
+                  << "  m_vertices.size() = " << m_vertices.size()
+                  << "  .capcity() = " << m_vertices.capacity()
+                  << std::endl;
+        for (int i = 0; i < m_vertices.size(); i++)
+        {
+            std::cout << "m_vertices[" << i << "].size() = "
+                      << m_vertices[i].size() << "  .capacity() = "
+                      << m_vertices[i].capacity() << std::endl;
+        } 
     }
 
 }
