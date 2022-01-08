@@ -5,6 +5,7 @@ file(GLOB EXTRA_SOURCE_FILES_
     "imgui/imgui.cpp"
     "imgui/imgui_draw.cpp"
     "imgui/imgui_widgets.cpp"
+    "imgui/imgui_tables.cpp"
 )
 
 if (NOT EXTRA_SOURCE_FILES_)
