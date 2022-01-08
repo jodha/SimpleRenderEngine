@@ -1,5 +1,4 @@
 ## Custom ignore
-bin/
 .cache/
 compile_commands.json
 
