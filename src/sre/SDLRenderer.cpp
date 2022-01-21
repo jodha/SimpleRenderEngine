@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iomanip>
 #include <string>
+#include <algorithm>
 #include <sre/imgui_sre.hpp>
 #include <sre/Log.hpp>
 #include <sre/VR.hpp>
@@ -132,30 +133,37 @@ namespace sre{
         using MilliSeconds = std::chrono::duration<float, std::chrono::milliseconds::period>;
         auto lastTick = Clock::now();
 
-        int numberOfEvents;
-        processEvents(numberOfEvents);
+        processEvents();
 
         // Determine whether to render frame for "minimalRendering" option
-        if (numberOfEvents > 0 || appUpdated)
-        {
-            appUpdated = false;
-            shouldDrawFrame = true;
-            if (minimalRendering)
-            {   // Draw at least two frames after each event: one to allowImGui
+        bool shouldRenderFrame = true;
+        if (minimalRendering) {
+            if (appUpdated || isAnyKeyPressed()) {
+                if (m_recordingEvents && lastEventFrameNumber != frameNumber) {
+                    // Record frame for app update or if any key is pressed
+                    // (unless event is already recorded)
+                    recordFrame();
+                }
+                lastEventFrameNumber = frameNumber;
+                if (appUpdated) {
+                    appUpdated = false;
+                }
+            }
+            if (frameNumber > lastEventFrameNumber + nMinimalRenderingFrames) {
+                // Draw at least two frames after each event: one to allow ImGui
                 // to handle the event and one to process actions triggered by
                 // ImGui (e.g. draw #1 draws pressed down OK button, draw #2
                 // hides the window and executes actions resulting from OK).
                 // However, ImGui uses 10 frames to "fade" gray screen for modal
                 // dialogs: respect this feature by using 10 rendering frames.
-                // Ideally, set to 2, but check if ImGui is "fading" (then set
-                // to 10)
-                nMinimalRenderingFrames = 10;
+                // TODO: create a function in ImGui called io.WantToRender() that
+                //       determines whether ImGui wants to render (e.g. needs to
+                //       redraw something or fade for a modal window). This should
+                //       return false if ImGui is just waiting for an event.
+                //       Then check this new function to decide if we should
+                //       render the frame when no event and no key down.
+                shouldRenderFrame = false;
             }
-        }
-        else if (minimalRendering)
-        {
-            if (nMinimalRenderingFrames > 0) nMinimalRenderingFrames--;
-            else shouldDrawFrame = false;
         }
         // Update and draw frame, measure times, and swap window
         {   // Measure time for event processing
@@ -163,8 +171,7 @@ namespace sre{
             deltaTimeEvent = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
             lastTick = tick;
         }
-        if (shouldDrawFrame)
-        {
+        if (shouldRenderFrame) {
             frameUpdate(deltaTimeSec);
             {   // Measure time for updating the frame
                 auto tick = Clock::now();
@@ -177,20 +184,22 @@ namespace sre{
                 deltaTimeRender = std::chrono::duration_cast<MilliSeconds>(tick - lastTick).count();
                 lastTick = tick;
             }
+            if (m_recordingEvents && frameNumber > lastEventFrameNumber
+                    && frameNumber <= lastEventFrameNumber + 2) {
+                // Only record two frames after the last event (see minimal
+                // rendering comments above)
+                recordFrame();
+            }
             r->swapWindow();
             frameNumber++;
-        }
-        else
-        {
+        } else {
             deltaTimeUpdate = 0.0f;
             deltaTimeRender = 0.0f;
         }
     }
 
     void
-    SDLRenderer::processEvents(int & numberOfEvents) {
-        numberOfEvents = 0;
-        bool recordedEvent = false;
+    SDLRenderer::processEvents() {
         SDL_Event e;
         if (m_playingBackEvents) {
             while( SDL_PollEvent( &e) != 0 ) {
@@ -205,14 +214,16 @@ namespace sre{
         //Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
+            lastEventFrameNumber = frameNumber;
+
             if (m_recordingEvents) {
-                recordEvent(frameNumber, e);
-                recordedEvent = true;
+                recordEvent(e);
             }
 
             ImGuiIO& imguiIO = ImGui::GetIO();
             ImGui_SRE_ProcessEvent(&e);
             auto key = e.key.keysym.sym;
+            auto keyState = e.key.state;
             bool hotKey;
 
             switch (e.type) {
@@ -232,6 +243,12 @@ namespace sre{
                               || key == SDLK_UP  || key == SDLK_DOWN);
                     if (!imguiIO.WantCaptureKeyboard || hotKey)
                         keyEvent(e);
+                    // Remember pressed keys (check for rendering and recording)
+                    if (keyState == SDL_PRESSED) {
+                        addKeyPressed(key);
+                    } else {
+                        removeKeyPressed(key);
+                    }
                     break;
                 case SDL_MOUSEMOTION:
                 case SDL_MOUSEBUTTONDOWN:
@@ -246,8 +263,7 @@ namespace sre{
                         // it no longer wants to capture)
                         SetArrowCursor();
                         // Block ImGui from setting mouse cursor: allow user set
-                        imguiIO.ConfigFlags
-                                      = ImGuiConfigFlags_NoMouseCursorChange;
+                        imguiIO.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
                     }
                     if (!imguiIO.WantCaptureMouse)
                     {
@@ -257,11 +273,10 @@ namespace sre{
                     else // imguiIO.WantCaptureMouse
                     {
                         // Allow ImGui to set mouse cursor
-                        imguiIO.ConfigFlags
-                                       = !ImGuiConfigFlags_NoMouseCursorChange;
+                        imguiIO.ConfigFlags = !ImGuiConfigFlags_NoMouseCursorChange;
                         // Do not pass event to SRE
                     }
-                    imGuiWantCaptureMousePrevious = imguiIO.WantCaptureMouse; 
+                    imGuiWantCaptureMousePrevious = imguiIO.WantCaptureMouse;
                     break;
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_CONTROLLERBUTTONDOWN:
@@ -289,21 +304,6 @@ namespace sre{
                     otherEvent(e);
                     break;
             }
-            numberOfEvents++;
-        }
-        // Record two empty frames to ensure ImGui completes tasks. See
-        // comments under minimalRendering in in SDLRenderer::frame() 
-        if (m_recordingEvents && !recordedEvent
-                        && frameNumber <= lastEventFrameNumber + 2
-                        && frameNumber != lastEventFrameNumber
-                        && frameNumber != lastEmptyEventFrameNumber) {
-            int x, y;
-            m_recordingStream << frameNumber << " "
-                            << getMouseState(&x, &y) << " "
-                            << x << " " << y << " "
-                            << "#no event"
-                            << std::endl;
-            lastEmptyEventFrameNumber = frameNumber;
         }
     }
 
@@ -358,7 +358,7 @@ namespace sre{
                 float delayS = timePerFrame - deltaTime;
                 if (!minimalRendering)
                 {   // Match frame rate exactly by underestimating delay
-                    // The while loop will fill the < 1 Millisecond gap 
+                    // The while loop will fill the < 1 Millisecond gap
                     delayMs = static_cast<Uint32>(delayS * 1000.0f);
                 }
                 else
@@ -384,7 +384,7 @@ namespace sre{
         // is still down and continue to return true, causing a large number
         // of "Enter" strokes to get registered in the command log)).
         int numEvents;
-        processEvents(numEvents);
+        processEvents();
         frameRender();
         r->swapWindow();
     }
@@ -520,7 +520,6 @@ namespace sre{
 
     void SDLRenderer::SetMinimalRendering(bool minimalRendering) {
         this->minimalRendering = minimalRendering;
-        if (!minimalRendering) this->shouldDrawFrame = true;
     }
 
     void SDLRenderer::SetAppUpdated(bool appUpdated) {
@@ -540,8 +539,8 @@ namespace sre{
         m_recordingStream << "#" << std::endl;
         size_t imGuiSize;
         const char * imGuiStr = ImGui::SaveIniSettingsToMemory(&imGuiSize);
-        m_recordingStream << "# imgui.ini size:" << std::endl; 
-        m_recordingStream << imGuiSize << std::endl; 
+        m_recordingStream << "# imgui.ini size:" << std::endl;
+        m_recordingStream << imGuiSize << std::endl;
         m_recordingStream << "# imgui.ini file:" << std::endl;
         m_recordingStream << imGuiStr;
         m_recordingStream << "# Recorded SDL events:" << std::endl
@@ -553,16 +552,25 @@ namespace sre{
         return true;
     }
 
+    void SDLRenderer::recordFrame() {
+        int x, y;
+        m_recordingStream << frameNumber << " "
+                          << getMouseState(&x, &y) << " "
+                          << x << " " << y << " "
+                          << "#no event"
+                          << std::endl;
+    }
+
     // Record SDL events (mouse, keyboard, etc.) to "m_recordingStream" member
     // variable and write to file in ::stopRecordingEvents(). Can read later to
-    // play back events, which enables testing scripts for ImGui interface 
-    void SDLRenderer::recordEvent(const int& frameNumber, const SDL_Event& e) {
+    // play back events, which enables testing scripts for ImGui interface
+    void SDLRenderer::recordEvent(const SDL_Event& e) {
         // SDL Events  are defined in $SDL_HOME/include/SDL_events.h
         //   typedef union SDL_Event ...
         // SDL_Keysym is defined in $SDL_HOME/include/SDL_keyboard.h
         //   typedef struct SDL_Keysym ...
         // SDL_Scancode is defined in $SDL_HOME/include/SDL_scancode.h
-        //   typedef enum { SDL_SCANCODE_UNKNOWN = 0, ... } SDL_Scancode; 
+        //   typedef enum { SDL_SCANCODE_UNKNOWN = 0, ... } SDL_Scancode;
         //   i.e. integer (same as enums)
         // SDL_Keycode is defined in $SDL_HOME/include/SDL_keycode.h
         //   typedef Sint32 SDL_Keycode [i.e. signed (standard) int (integer)]
@@ -589,7 +597,7 @@ namespace sre{
         // std::cout << std::showbase // show the 0x prefix
         //      << std::internal      // fill between the prefix and the number
         //      << std::setfill('0'); // fill with 0s
-        // std::cout << std::hex << std::setw(4) << value 
+        // std::cout << std::hex << std::setw(4) << value
         int x, y;
         switch (e.type) {
             case SDL_QUIT:
@@ -599,7 +607,6 @@ namespace sre{
                     << "quit" << " "
                     << "#end program"
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             case SDL_TEXTINPUT:
                 if (!m_pauseRecordingOfTextEvents) {
@@ -613,7 +620,6 @@ namespace sre{
                         << "#text "
                         << e.text.text
                         << std::endl;
-                    lastEventFrameNumber = frameNumber;
                 }
                 break;
             case SDL_KEYDOWN:
@@ -637,7 +643,6 @@ namespace sre{
                     << (e.key.state == SDL_PRESSED ? "pressed" : "released")
                     << " '" << char(e.key.keysym.sym) << "'"
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             case SDL_MOUSEMOTION:
                 m_recordingStream << frameNumber << " "
@@ -652,11 +657,10 @@ namespace sre{
                     << e.motion.y << " "
                     << e.motion.xrel << " "
                     << e.motion.yrel << " "
-                    << "#motion (" 
+                    << "#motion ("
                     << (e.motion.state == SDL_PRESSED ? "pressed" : "released")
                     << ")"
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
@@ -674,10 +678,9 @@ namespace sre{
                     << +e.button.padding1 << " "
                     << e.button.x << " "
                     << e.button.y << " "
-                    << "#button " 
+                    << "#button "
                     << (e.button.state == SDL_PRESSED ? "pressed" : "released")
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             case SDL_MOUSEWHEEL:
                 m_recordingStream << frameNumber << " "
@@ -690,9 +693,8 @@ namespace sre{
                     << e.wheel.x << " "
                     << e.wheel.y << " "
                     << e.wheel.direction << " "
-                    << "#wheel" 
+                    << "#wheel"
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             case SDL_CONTROLLERAXISMOTION:
             case SDL_CONTROLLERBUTTONDOWN:
@@ -727,23 +729,12 @@ namespace sre{
                     << e.tfinger.dy << " "
                     << e.tfinger.pressure << " "
                     << e.tfinger.windowID << " "
-                    << "#tfinger" 
+                    << "#tfinger"
                     << std::endl;
-                lastEventFrameNumber = frameNumber;
                 break;
             default:
-                // Record two empty frames to ensure ImGui completes tasks. See
-                // comments under minimalRendering in in SDLRenderer::frame() 
-                if (frameNumber <= lastEventFrameNumber + 2
-                                && frameNumber != lastEventFrameNumber
-                                && frameNumber != lastEmptyEventFrameNumber) {
-                    m_recordingStream << frameNumber << " "
-                                    << getMouseState(&x, &y) << " "
-                                    << x << " " << y << " "
-                                    << "#no event"
-                                    << std::endl;
-                    lastEmptyEventFrameNumber = frameNumber;
-                }
+                // Record all events (even empty and "non-registered" events)
+                recordFrame();
                 break;
         }
     }
@@ -752,7 +743,7 @@ namespace sre{
         SDL_Event e;
         e.type = 0;
         endOfFile = false;
-        frameNumber = -99; // Indicates error
+        int nextFrameDummy;
         std::string eventLineString;
         bool commentedLine = true;
         while (commentedLine) {
@@ -770,9 +761,9 @@ namespace sre{
             }
             return e;
         }
-        // The value for frame number is only used for
-        // nextRecordedFramePeek(), but we need to advance the stream
-        eventLine >> frameNumber;
+        // The value for nextFrame is only used for nextRecordedFramePeek(),
+        // but we need to advance the stream, so store in dummy variable
+        eventLine >> nextFrameDummy;
         if (!eventLine) {
             LOG_ERROR("Error getting frame number from m_playbackStream");
             return e;
@@ -940,6 +931,38 @@ namespace sre{
         return keymodState;
     }
 
+    void
+    SDLRenderer::addKeyPressed(SDL_Keycode keyCode) {
+        if (!isKeyPressed(keyCode)) {
+            keyPressed.push_back(keyCode);
+        }
+    }
+
+    void
+    SDLRenderer::removeKeyPressed(SDL_Keycode keyCode) {
+        auto &v = keyPressed;
+        // Use the the "erase-remove idiom" enabled by std::algorithm
+        v.erase(std::remove(v.begin(), v.end(), keyCode), v.end());
+    }
+
+    bool 
+    SDLRenderer::isKeyPressed(SDL_Keycode keyCode) {
+        for (SDL_Keycode key : keyPressed) {
+            if (key == keyCode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool 
+    SDLRenderer::isAnyKeyPressed() {
+        if (keyPressed.size() > 0) {
+            return true;
+        }
+        return false;
+    }
+
     bool SDLRenderer::stopRecordingEvents() {
         bool success = true;
         if (!m_recordingEvents) {
@@ -952,7 +975,7 @@ namespace sre{
             std::stringstream().swap(m_recordingStream);
         } else {
             std::stringstream errorStream;
-            errorStream << "File " << m_recordingFileName 
+            errorStream << "File " << m_recordingFileName
                 << " could not be opened." << std::endl;
             LOG_ERROR(errorStream.str().c_str());
             success = false;
@@ -971,23 +994,6 @@ namespace sre{
             return success = false;
         }
         m_playingBackEvents = true;
-        // Debugging code
-        // SDL_Event e;
-        // int nextFrame;
-        // bool endOfFile = false;
-        // if (!startRecordingEvents("playback_test.log")) {
-        //     return success = false;
-        // }
-        // while (!endOfFile) {
-        //     e = getNextRecordedEvent(nextFrame, endOfFile);
-        //     if (!endOfFile) {
-        //         recordEvent(nextFrame, e);
-        //     }
-        // }
-        // if (!stopRecordingEvents()) {
-        //     return success = false;
-        // }
-        // m_playingBackEvents = false;
         return success;
     }
 
@@ -1043,6 +1049,20 @@ namespace sre{
             }
             // Load the imgui.ini character stream into ImGui
             ImGui::LoadIniSettingsFromMemory(imGuiStream.str().c_str(), imGuiSize);
+            // Need to make a = nextCharPeek() function to return next char
+            // but put it back. If it is a comment, then read the line and
+            // discard it. This will enable getting rid of the ugly
+            // while (commentedLine) code, when it may not be commented
+            // when it starts. This will also enable being able to put a
+            // comment anywhere in the code and ignore it. Maybe make a
+            // DiscardCommentedLines() function?
+/*            commentedLine = true;
+            while (commentedLine) {
+                std::getline(inFile, fileLineString);
+                if (!inFile || fileLineString[0] != '#') {
+                    commentedLine = false;
+                }
+            }*/
             // Read the rest of file into the 'm_playbackStream' member variable
             std::stringstream().swap(m_playbackStream);
             while (inFile.get(c)) {
@@ -1051,7 +1071,7 @@ namespace sre{
             inFile.close();
         } else {
             std::stringstream errorStream;
-            errorStream << "File " << fileName 
+            errorStream << "File " << fileName
                 << " could not be opened." << std::endl;
             LOG_ERROR(errorStream.str().c_str());
             success = false;
@@ -1116,10 +1136,12 @@ namespace sre{
             m_playbackStream.unget();
         }
         int nextFrame;
-        numberString >> nextFrame;
+        if (!(numberString >> nextFrame)) {
+            nextFrame = -99;
+        }
         return nextFrame;
     }
-        
+
     SDLRenderer::InitBuilder::~InitBuilder() {
         build();
     }

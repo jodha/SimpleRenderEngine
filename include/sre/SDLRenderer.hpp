@@ -150,11 +150,19 @@ public:
     bool playingBackEvents();                                   // Returns true if SRE is playing back recorded events
     void setPausePlaybackOfEvents(const bool pause);            // Pause (or un-pause) playback of recorded events
     void setPauseRecordingOfTextEvents(const bool pause);       // Pause (or un-pause) recording events
+
+    bool isKeyPressed(SDL_Keycode keyCode);                     // Return true if a specific key is pressed 
+    bool isAnyKeyPressed();                                     // Return true if any key is pressed
+
 private:
+    // Mouse and keyboard interface
     Uint32 getMouseState(int* x, int* y);                       // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of recorded events
     SDL_Keymod getKeymodState();                                // Intercept calls to SDL_GetModState for Dear ImGui during playback of recorded events
     friend bool ImGui_SRE_ProcessEvent(SDL_Event *event);       // This ImGui SRE interface function calls getKeymodState
     friend void ImGui_SRE_NewFrame(SDL_Window *window);         // This ImGui SRE interface function calls getMouseState
+    std::vector<SDL_Keycode> keyPressed;
+    void addKeyPressed(SDL_Keycode keyCode);
+    void removeKeyPressed(SDL_Keycode keyCode);
 
     void frame(float deltaTimeSec);
     Renderer* r;
@@ -169,7 +177,7 @@ private:
     bool running = false;
     bool runningEventSubLoop = false;
     void executeEventLoop(bool& runEventLoop); // Implementation of event loop
-    void processEvents(int & numberOfEvents);
+    void processEvents();
 
     // Window properties
     int windowWidth = 800;
@@ -183,8 +191,9 @@ private:
     friend class SDLRendererInternal;
     friend class Inspector;
 
-    // Recording and playback of events
-    void recordEvent(const int& frameNumber, const SDL_Event& e);
+    // Recording and playback of frames and events
+    void recordFrame();
+    void recordEvent(const SDL_Event& e);
     SDL_Event getNextRecordedEvent(bool& endOfFile);
     bool readRecordedEvents(std::string fileName);
     bool pushRecordedEventsForNextFrameToSDL();
@@ -195,7 +204,7 @@ private:
     std::string m_recordingFileName;
     std::stringstream m_recordingStream;
     std::stringstream m_playbackStream;
-    int m_playbackFrame = -1;
+    int m_playbackFrame = -99; // Invalid value to start
     SDL_Keymod m_playbackKeymodState;
     Uint32 m_playbackMouseState;
     int m_playbackMouse_x;
@@ -205,14 +214,12 @@ private:
 
     // Minimal rendering option
     int frameNumber = 0;
-    int lastEventFrameNumber = -99;
-    int lastEmptyEventFrameNumber = -99;
+    int lastEventFrameNumber = -99; // Invalid value to start
     bool appUpdated = false;
-    bool shouldDrawFrame = true;
     bool minimalRendering = false;
-    unsigned short nMinimalRenderingFrames = 0;
+    unsigned short nMinimalRenderingFrames = 10;
 
-    // Handling mouse cursor changes
+    // Handle mouse cursor changes
     SDL_Cursor* cursor;
     Cursor cursorType = Cursor::Arrow;
     bool imGuiWantCaptureMousePrevious = true; 
