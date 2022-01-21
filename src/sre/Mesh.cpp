@@ -1275,6 +1275,14 @@ namespace sre {
 
     // LineContainer Class =====================================================
 
+    // TODO: This class contains a set of "paired" vectors: m_colors,
+    //       m_materials, m_lineWidths, m_topologies, m_meshes, and m_status.
+    //       Instead of using seperate vectors, the code could be cleaned up
+    //       by using a vector of std::tuple. However, you would still need
+    //       to store the vertices vectors in a seperate vector. This is because
+    //       we do not want to clear the vertices vector completely (we want to
+    //       retain the storage).
+
     void LineContainer::add(const std::vector<glm::vec3> & verticesIn,
                             const Color & colorIn, const float & lineWidthIn,
                             const MeshTopology & topologyIn)
