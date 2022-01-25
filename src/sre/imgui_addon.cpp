@@ -6,6 +6,11 @@ namespace ImGui {
 
 //=========================== ImGui Functions ==================================
 
+void TestGitUpdate()
+{
+    std::cout << "Testing..." << std::endl;
+}
+
 bool
 ShowMessage(const std::string& message,
 			const std::string& title,

@@ -10,6 +10,8 @@ namespace ImGui {
 
 //====================== ImGui Add-on Functions ================================
 
+extern void TestGitUpdate();
+
 extern bool ShowMessage(const std::string& message,
 						const std::string& title = "Error",
 						// Last two arguments are for a modal "process dialog"
