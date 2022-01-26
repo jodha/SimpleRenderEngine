@@ -11,6 +11,11 @@ void TestGitUpdate()
     std::cout << "Testing..." << std::endl;
 }
 
+void TestGitUpdate_v2()
+{
+    std::cout << "Testing... Version 2..." << std::endl;
+}
+
 bool
 ShowMessage(const std::string& message,
 			const std::string& title,

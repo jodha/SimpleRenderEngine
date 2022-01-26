@@ -11,6 +11,7 @@ namespace ImGui {
 //====================== ImGui Add-on Functions ================================
 
 extern void TestGitUpdate();
+extern void TestGitUpdate_v2();
 
 extern bool ShowMessage(const std::string& message,
 						const std::string& title = "Error",
