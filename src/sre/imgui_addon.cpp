@@ -4,16 +4,7 @@
 
 namespace ImGui {
 
-bool g_showMessage = true;
-
 //=========================== ImGui Functions ==================================
-
-void TestGitUpdate()
-{
-    if (g_showMessage && ShowMessage("Hi Paps!")) {
-        g_showMessage = false;
-    }
-}
 
 bool
 ShowMessage(const std::string& message,

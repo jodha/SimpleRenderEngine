@@ -10,8 +10,6 @@ namespace ImGui {
 
 //====================== ImGui Add-on Functions ================================
 
-extern void TestGitUpdate();
-
 extern bool ShowMessage(const std::string& message,
 						const std::string& title = "Error",
 						// Last two arguments are for a modal "process dialog"
@@ -20,7 +18,7 @@ extern bool ShowMessage(const std::string& message,
 						bool* show = nullptr);
 
 extern void ToggleButton(const char* str_id, bool* selected, ImVec2 size);
- 
+
 
 // It would be good to commit the revised ImGui::RadioButton function below to
 // the Dear ImGui repository.  If so, remove the capital 'T' from name (it
@@ -38,5 +36,5 @@ template<typename T> bool RadioButtonT(const char* label, T* v, T v_button)
 }
 
 } // namespace ImGui
- 
+
 #endif // IMGUI_ADDON_H_
