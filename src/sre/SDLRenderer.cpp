@@ -905,62 +905,8 @@ namespace sre{
         return e;
     }
 
-    // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of
-    // recorded events
-    Uint32 SDLRenderer::getMouseState(int* x, int* y) {
-        Uint32 mouseState;
-        if (m_playingBackEvents) {
-            *x = m_playbackMouse_x;
-            *y = m_playbackMouse_y;
-            mouseState = m_playbackMouseState;
-        } else {
-            mouseState = SDL_GetMouseState(x, y);
-        }
-        return mouseState;
-    }
-
-    // Intercept calls to SDL_GetModState for Dear ImGui during playback of
-    // recorded events
-    SDL_Keymod SDLRenderer::getKeymodState() {
-        SDL_Keymod keymodState;
-        if (m_playingBackEvents) {
-            keymodState = m_playbackKeymodState;
-        } else {
-            keymodState = SDL_GetModState();
-        }
-        return keymodState;
-    }
-
-    void
-    SDLRenderer::addKeyPressed(SDL_Keycode keyCode) {
-        if (!isKeyPressed(keyCode)) {
-            keyPressed.push_back(keyCode);
-        }
-    }
-
-    void
-    SDLRenderer::removeKeyPressed(SDL_Keycode keyCode) {
-        auto &v = keyPressed;
-        // Use the the "erase-remove idiom" enabled by std::algorithm
-        v.erase(std::remove(v.begin(), v.end(), keyCode), v.end());
-    }
-
-    bool 
-    SDLRenderer::isKeyPressed(SDL_Keycode keyCode) {
-        for (SDL_Keycode key : keyPressed) {
-            if (key == keyCode) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool 
-    SDLRenderer::isAnyKeyPressed() {
-        if (keyPressed.size() > 0) {
-            return true;
-        }
-        return false;
+    void SDLRenderer::setPauseRecordingOfTextEvents(const bool pause) {
+        m_pauseRecordingOfTextEvents = pause;
     }
 
     bool SDLRenderer::stopRecordingEvents() {
@@ -982,6 +928,10 @@ namespace sre{
         }
         m_recordingEvents = false;
         return success;
+    }
+
+    bool SDLRenderer::recordingEvents() {
+        return m_recordingEvents;
     }
 
     bool SDLRenderer::playBackRecordedEvents(std::string fileName) {
@@ -1079,16 +1029,12 @@ namespace sre{
         return success;
     }
 
-    bool SDLRenderer::playingBackEvents() {
-        return m_playingBackEvents;
-    }
-
     void SDLRenderer::setPausePlaybackOfEvents(const bool pause) {
         m_pausePlaybackOfEvents = pause;
     }
 
-    void SDLRenderer::setPauseRecordingOfTextEvents(const bool pause) {
-        m_pauseRecordingOfTextEvents = pause;
+    bool SDLRenderer::playingBackEvents() {
+        return m_playingBackEvents;
     }
 
     bool SDLRenderer::pushRecordedEventsForNextFrameToSDL() {
@@ -1140,6 +1086,64 @@ namespace sre{
             nextFrame = -99;
         }
         return nextFrame;
+    }
+
+    // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of
+    // recorded events
+    Uint32 SDLRenderer::getMouseState(int* x, int* y) {
+        Uint32 mouseState;
+        if (m_playingBackEvents) {
+            *x = m_playbackMouse_x;
+            *y = m_playbackMouse_y;
+            mouseState = m_playbackMouseState;
+        } else {
+            mouseState = SDL_GetMouseState(x, y);
+        }
+        return mouseState;
+    }
+
+    // Intercept calls to SDL_GetModState for Dear ImGui during playback of
+    // recorded events
+    SDL_Keymod SDLRenderer::getKeymodState() {
+        SDL_Keymod keymodState;
+        if (m_playingBackEvents) {
+            keymodState = m_playbackKeymodState;
+        } else {
+            keymodState = SDL_GetModState();
+        }
+        return keymodState;
+    }
+
+    void
+    SDLRenderer::addKeyPressed(SDL_Keycode keyCode) {
+        if (!isKeyPressed(keyCode)) {
+            keyPressed.push_back(keyCode);
+        }
+    }
+
+    void
+    SDLRenderer::removeKeyPressed(SDL_Keycode keyCode) {
+        auto &v = keyPressed;
+        // Use the the "erase-remove idiom" enabled by std::algorithm
+        v.erase(std::remove(v.begin(), v.end(), keyCode), v.end());
+    }
+
+    bool
+    SDLRenderer::isKeyPressed(SDL_Keycode keyCode) {
+        for (SDL_Keycode key : keyPressed) {
+            if (key == keyCode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool
+    SDLRenderer::isAnyKeyPressed() {
+        if (keyPressed.size() > 0) {
+            return true;
+        }
+        return false;
     }
 
     SDLRenderer::InitBuilder::~InitBuilder() {

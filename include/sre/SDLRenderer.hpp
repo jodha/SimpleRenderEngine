@@ -144,26 +144,17 @@ public:
                                                                 // start recording only based on a flag passed as an argument to the application) because
                                                                 // it is nearly impossible to characterize the starting state of an application after a user
                                                                 // has been operating for even a short amount of time)
-
+    void setPauseRecordingOfTextEvents(const bool pause);       // Pause (or un-pause) recording SDL events
     bool stopRecordingEvents();                                 // End recording SDL events
+    bool recordingEvents();                                     // Returns true if SRE is recording SDL events
     bool playBackRecordedEvents(std::string fileName);          // Play back recorded SDL events
-    bool playingBackEvents();                                   // Returns true if SRE is playing back recorded events
-    void setPausePlaybackOfEvents(const bool pause);            // Pause (or un-pause) playback of recorded events
-    void setPauseRecordingOfTextEvents(const bool pause);       // Pause (or un-pause) recording events
+    void setPausePlaybackOfEvents(const bool pause);            // Pause (or un-pause) playback of recorded SDL events
+    bool playingBackEvents();                                   // Returns true if SRE is playing back recorded SDL events
 
     bool isKeyPressed(SDL_Keycode keyCode);                     // Return true if a specific key is pressed 
     bool isAnyKeyPressed();                                     // Return true if any key is pressed
 
 private:
-    // Mouse and keyboard interface
-    Uint32 getMouseState(int* x, int* y);                       // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of recorded events
-    SDL_Keymod getKeymodState();                                // Intercept calls to SDL_GetModState for Dear ImGui during playback of recorded events
-    friend bool ImGui_SRE_ProcessEvent(SDL_Event *event);       // This ImGui SRE interface function calls getKeymodState
-    friend void ImGui_SRE_NewFrame(SDL_Window *window);         // This ImGui SRE interface function calls getMouseState
-    std::vector<SDL_Keycode> keyPressed;
-    void addKeyPressed(SDL_Keycode keyCode);
-    void removeKeyPressed(SDL_Keycode keyCode);
-
     void frame(float deltaTimeSec);
     Renderer* r;
     SDLRenderer(const SDLRenderer&) = delete;
@@ -191,6 +182,18 @@ private:
     friend class SDLRendererInternal;
     friend class Inspector;
 
+    // Minimal rendering option
+    int frameNumber = 0;
+    int lastEventFrameNumber = -99; // Invalid value to start
+    bool appUpdated = false;
+    bool minimalRendering = false;
+    unsigned short nMinimalRenderingFrames = 10;
+
+    // Handle mouse cursor changes
+    SDL_Cursor* cursor;
+    Cursor cursorType = Cursor::Arrow;
+    bool imGuiWantCaptureMousePrevious = true;
+
     // Recording and playback of frames and events
     void recordFrame();
     void recordEvent(const SDL_Event& e);
@@ -212,17 +215,14 @@ private:
     bool m_pausePlaybackOfEvents = false;
     bool m_pauseRecordingOfTextEvents = false;
 
-    // Minimal rendering option
-    int frameNumber = 0;
-    int lastEventFrameNumber = -99; // Invalid value to start
-    bool appUpdated = false;
-    bool minimalRendering = false;
-    unsigned short nMinimalRenderingFrames = 10;
-
-    // Handle mouse cursor changes
-    SDL_Cursor* cursor;
-    Cursor cursorType = Cursor::Arrow;
-    bool imGuiWantCaptureMousePrevious = true; 
+    // Mouse and keyboard interface
+    Uint32 getMouseState(int* x, int* y);                       // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of recorded events
+    SDL_Keymod getKeymodState();                                // Intercept calls to SDL_GetModState for Dear ImGui during playback of recorded events
+    friend bool ImGui_SRE_ProcessEvent(SDL_Event *event);       // This ImGui SRE interface function calls getKeymodState
+    friend void ImGui_SRE_NewFrame(SDL_Window *window);         // This ImGui SRE interface function calls getMouseState
+    std::vector<SDL_Keycode> keyPressed;
+    void addKeyPressed(SDL_Keycode keyCode);
+    void removeKeyPressed(SDL_Keycode keyCode);
 };
 
 }
