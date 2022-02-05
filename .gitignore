@@ -1,6 +1,7 @@
 ## Custom ignore
 .cache/
 compile_commands.json
+.project 
 
 #################
 ## Visual Studio
