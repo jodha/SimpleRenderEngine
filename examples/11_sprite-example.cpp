@@ -99,7 +99,7 @@ public:
             static float rotation = 0;
             static glm::bvec2 flip = {false,false};
 
-            ImGui::ColorEdit4("Color", &color.x,ImGuiColorEditFlags_RGB|ImGuiColorEditFlags_Float);
+            ImGui::ColorEdit4("Color", &color.x,ImGuiColorEditFlags_DisplayRGB|ImGuiColorEditFlags_Float);
             ImGui::DragFloat2("Pos", &position.x,1);
             ImGui::DragFloat("Rotation", &rotation,1);
             ImGui::DragFloat2("Scale", &scale.x,0.1);
