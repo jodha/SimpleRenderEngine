@@ -20,7 +20,7 @@ jobs:
     steps:
     - name: install_dependencies
       run: 
-        brew insall libsdl2-image-dev
+        brew install libsdl2-image-dev
         brew install sdl2
     - uses: actions/checkout@v2
       with:
