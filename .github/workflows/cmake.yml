@@ -21,11 +21,28 @@ jobs:
     - name: install_dependencies
       run: |
         brew install sdl2 sdl2_image
-        brew install ccache
+
     - name: Checkout repository
       uses: actions/checkout@v2
+
     - name: Checkout submodules
       run: git submodule update --init --recursive
+
+    - name: Prepare ccache timestamp
+      id: ccache_cache_timestamp
+      shell: cmake -P {0}
+      run: |
+        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+        message("::set-output name=timestamp::${current_date}")
+
+    - name: ccache cache files
+      uses: actions/cache@v2
+      with:
+        path: .ccache
+        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        restore-keys: |
+            ${ { matrix.config.name } }-ccache-
+
   
     - name: Configure CMake
       shell: cmake -P {0}
@@ -58,17 +75,4 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest 
       
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
 
-    - name: ccache cache files
-      uses: actions/cache@v2
-      with:
-        path: .ccache
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
-        restore-keys: |
-            ${ { matrix.config.name } }-ccache-
