@@ -20,7 +20,7 @@ jobs:
     steps:
     - name: install_dependencies
       run: 
-        brew install sdl2 sdl2-image
+        brew install sdl2 sdl2_image
     - uses: actions/checkout@v2
       with:
         args: git submodule update --init --recursive
