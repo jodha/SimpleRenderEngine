@@ -44,9 +44,9 @@ jobs:
       run: ctest 
       
     - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        shell: cmake -P {0}
-        run: |
+      id: ccache_cache_timestamp
+      shell: cmake -P {0}
+      run: |
         string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
         message("::set-output name=timestamp::${current_date}")
 
