@@ -94,6 +94,7 @@ endif(USE_SRE_EXAMPLES)
 
 SET(USE_SRE_TEST_AND_UTILS OFF CACHE BOOL "Enable Tests and Utils for SRE")
 IF (USE_SRE_TEST_AND_UTILS)
+    add_subdirectory(googletest)
     add_subdirectory(test)
     add_subdirectory(utils)
 ENDIF(USE_SRE_TEST_AND_UTILS)
