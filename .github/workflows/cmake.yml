@@ -53,7 +53,7 @@ jobs:
 
     - name: ccache cache files
       uses: actions/cache@v2
-        with:
+      with:
         path: .ccache
         key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
         restore-keys: |
