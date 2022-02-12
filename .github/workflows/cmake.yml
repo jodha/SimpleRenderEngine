@@ -20,7 +20,7 @@ jobs:
     steps:
     - name: install_dependencies
       run: 
-        sudo apt-get install libsdl2-dev
+        brew install sdl2
     - uses: actions/checkout@v2
       with:
         args: git submodule update --init --recursive
