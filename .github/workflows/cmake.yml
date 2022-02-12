@@ -21,6 +21,7 @@ jobs:
     - name: install_dependencies
       run: 
         brew install sdl2
+        brew insall libsdl2-image-dev
     - uses: actions/checkout@v2
       with:
         args: git submodule update --init --recursive
