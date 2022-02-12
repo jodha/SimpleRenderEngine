@@ -35,14 +35,15 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: |        
-        set(ENV{CCACHE_BASEDIR} "${GITHUB_WORKSPACE}")
-        set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
-        set(ENV{CCACHE_COMPRESS} "true")
-        set(ENV{CCACHE_COMPRESSLEVEL} "6")
-        set(ENV{CCACHE_MAXSIZE} "400M")
-        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
-          set(ENV{CCACHE_MAXSIZE} "600M")
-        endif()
+        # file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
+        # set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
+        # set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
+        # set(ENV{CCACHE_COMPRESS} "true")
+        # set(ENV{CCACHE_COMPRESSLEVEL} "6")
+        # set(ENV{CCACHE_MAXSIZE} "400M")
+        # if ("${{ matrix.config.cxx }}" STREQUAL "cl")
+        #   set(ENV{CCACHE_MAXSIZE} "600M")
+        # endif()
         cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       env:
         MAKEFLAGS: "-j8"
@@ -61,7 +62,7 @@ jobs:
         message("::set-output name=timestamp::${current_date}")
 
     - name: ccache cache files
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v2
       with:
         path: .ccache
         key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
