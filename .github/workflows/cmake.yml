@@ -28,25 +28,29 @@ jobs:
       run: git submodule update --init --recursive
   
     - name: Configure CMake
+      shell: cmake -P {0}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
-
+      run: |
+        execute_process(
+           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+        )
     - name: Build
-      # Build your program with the given configuration
-      run: |        
-        # file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
-        # set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
-        # set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
-        # set(ENV{CCACHE_COMPRESS} "true")
-        # set(ENV{CCACHE_COMPRESSLEVEL} "6")
-        # set(ENV{CCACHE_MAXSIZE} "400M")
-        # if ("${{ matrix.config.cxx }}" STREQUAL "cl")
-        #   set(ENV{CCACHE_MAXSIZE} "600M")
-        # endif()
-        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      env:
-        MAKEFLAGS: "-j8"
+      # Build your pogram with the given configuration
+      shell: cmake -P {0}
+      run: |
+        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
+        set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
+        set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
+        set(ENV{CCACHE_COMPRESS} "true")
+        set(ENV{CCACHE_COMPRESSLEVEL} "6")
+        set(ENV{CCACHE_MAXSIZE} "400M")
+        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
+          set(ENV{CCACHE_MAXSIZE} "600M")
+        endif()
+        execute_process(
+          COMMAND cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        )
       
     - name: Test
       working-directory: ${{github.workspace}}/build
