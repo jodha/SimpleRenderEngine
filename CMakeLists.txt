@@ -27,6 +27,9 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 find_package(SDL2 REQUIRED)
 set(SRE_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test/unit_tests)
+enable_testing()
+
 #########################################################
 # FIND OPENGL
 #########################################################
