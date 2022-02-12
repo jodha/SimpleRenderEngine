@@ -19,8 +19,9 @@ jobs:
 
     steps:
     - name: install_dependencies
-      run: 
+      run: |
         brew install sdl2 sdl2_image
+        brew install ccache
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: Checkout submodules
