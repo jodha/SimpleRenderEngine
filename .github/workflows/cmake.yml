@@ -21,6 +21,7 @@ jobs:
     - name: install_dependencies
       run: |
         brew install sdl2 sdl2_image
+        brew install ccache
 
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -69,6 +70,14 @@ jobs:
           COMMAND cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
         )
       
+    - name: ccache statistics
+      shell: cmake -P {0}
+      run: |
+        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
+        set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
+        set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
+        execute_process(COMMAND ccache -s)
+
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.  
