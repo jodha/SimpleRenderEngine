@@ -20,10 +20,13 @@ jobs:
           
     steps:
     
-    - name: Cache NPM dependencies
+    - name: Cache sdl2 dependencies
       uses: actions/cache@v1
       with:
-        path: ~/.ccache
+        path: |
+          ~/.sdl2
+          ~/.sdl2_image
+          ~/.ccache
         key: ${{ runner.OS }}-ccache-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.OS }}-ccache-
