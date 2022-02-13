@@ -22,6 +22,7 @@ jobs:
     
     - name: Cache sdl2 dependencies
       uses: actions/cache@v2
+      id: caching_worked
       with:
         path: |
           ~/.sdl2
@@ -33,6 +34,7 @@ jobs:
           ${{ runner.OS }}-ccache-
           
     - name: install_dependencies
+      if: steps.caching_worked.outputs.cache-hit != 'true'
       run: |
         brew install sdl2 sdl2_image
         brew install ccache
