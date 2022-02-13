@@ -23,6 +23,6 @@ TEST(Third, Try)
 TEST(Fourth, Try)
 {
     int number = 2;
-    EXPECT_EQ(3, number); 
+    EXPECT_EQ(2, number); 
 }
 
