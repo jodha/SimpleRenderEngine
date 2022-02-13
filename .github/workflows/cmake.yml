@@ -67,7 +67,7 @@ jobs:
           set(ENV{CCACHE_MAXSIZE} "600M")
         endif()
         execute_process(
-          COMMAND cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+          COMMAND cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE} -j8}
         )
       
     - name: ccache statistics
