@@ -14,3 +14,9 @@ TEST(Second, Try)
    EXPECT_EQ(std::string("Hello World"), message);
 }
 
+TEST(Third, Try)
+{
+   double estimate = 1.0003;
+   EXPECT_NEAR(1.00029999, estimate, 1.0e-6);
+}
+
