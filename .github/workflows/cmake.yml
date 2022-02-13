@@ -34,7 +34,7 @@ jobs:
           ${{ runner.OS }}-ccache-
           
     - name: install_dependencies
-      if: steps.caching_worked.outputs.cache-hit != 'true'
+      # if: steps.caching_worked.outputs.cache-hit != 'true'
       run: |
         brew install sdl2 sdl2_image
         brew install ccache
