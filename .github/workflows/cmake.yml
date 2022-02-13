@@ -21,13 +21,14 @@ jobs:
     steps:
     
     - name: Cache sdl2 dependencies
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: |
           ~/.sdl2
           ~/.sdl2_image
           ~/.ccache
-        key: ${{ runner.OS }}-ccache-${{ hashFiles('**/package-lock.json') }}
+        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+
         restore-keys: |
           ${{ runner.OS }}-ccache-
           
@@ -52,7 +53,10 @@ jobs:
     - name: ccache cache files
       uses: actions/cache@v2
       with:
-        path: .ccache
+        path: |
+          .ccache
+          .sdl2
+          .sdl2_image
         key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
         restore-keys: |
             ${ { matrix.config.name } }-ccache-
