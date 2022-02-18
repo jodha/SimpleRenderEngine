@@ -27,6 +27,9 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 find_package(SDL2 REQUIRED)
 set(SRE_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test/unit_tests)
+enable_testing()
+
 #########################################################
 # FIND OPENGL
 #########################################################
@@ -94,7 +97,9 @@ endif(USE_SRE_EXAMPLES)
 
 SET(USE_SRE_TEST_AND_UTILS OFF CACHE BOOL "Enable Tests and Utils for SRE")
 IF (USE_SRE_TEST_AND_UTILS)
+    add_subdirectory(submodules/googletest)
     add_subdirectory(test)
+    add_subdirectory(test/unit_tests)
     add_subdirectory(utils)
 ENDIF(USE_SRE_TEST_AND_UTILS)
 set(SRE_LIBRARIES SRE ${EXTRA_LIBS} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${OPENVR_LIB} CACHE PATH "" FORCE)

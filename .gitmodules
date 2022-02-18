@@ -10,3 +10,6 @@
 [submodule "submodules/ImGuiColorTextEdit"]
 	path = submodules/ImGuiColorTextEdit
 	url = https://github.com/BalazsJako/ImGuiColorTextEdit.git
+[submodule "submodules/googletest"]
+	path = submodules/googletest
+	url = https://github.com/google/googletest.git
