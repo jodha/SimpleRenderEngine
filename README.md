@@ -74,8 +74,8 @@ Clone the library and and take the following steps:
  * git remote add upstream https://github.com/estrac/SimpleRenderEngine.git
  * pwd (Note: use this to get the full-path-of-install-directory used below)
  * git checkout
- * mkdir -p ../sre_build (the '-p' flag gracefully handle a pre-existing directory)
- * cd ../sre_build
+ * mkdir -p ../sreBuild (the '-p' flag gracefully handle a pre-existing directory)
+ * cd ../sreBuild
  * cmake [full-path-of-install-directory]
  * make
  * cd examples
