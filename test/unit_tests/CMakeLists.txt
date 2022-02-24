@@ -14,7 +14,7 @@ foreach(case_file ${test_cases})
                           ${LINK_LIBS} gtest_main pthread  
                          )
     add_test(NAME ${case_name}
-             COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${case_name}
-             WORKING_DIRECTORY
-             ${PROJECT_BINARY_DIR})
+             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/unit_tests/
+             COMMAND ${case_name}
+             )
 endforeach()

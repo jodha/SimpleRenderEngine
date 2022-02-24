@@ -144,7 +144,7 @@ public:
 
         checkGLError();
 
-        ImGui::LabelText("Rightclick to shoot ray", "");
+        ImGui::LabelText("", "Rightclick to shoot ray");
         rp.draw(planeMesh, glm::translate(glm::vec3{0,-1.0f,0})*glm::scale(glm::vec3{1,.01f,1}), matPlane);
 
         ImGui::LabelText("raycastOrigin", "%.1f,%.1f,%.1f", raycastOrigin.x,raycastOrigin.y,raycastOrigin.z);

@@ -69,17 +69,18 @@ Clone the library and and take the following steps:
 
  * cd [directory-to-install-into] 
  * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre). Note that if you have forked the repository you should replace 'estrac' with your username.
- * cd sre
+ * 'cd sre'
  * If you have forked the repository, run the following to stay in-sync:
- * git remote add upstream https://github.com/estrac/SimpleRenderEngine.git
- * pwd (Note: use this to get the full-path-of-install-directory used below)
- * git checkout
- * mkdir -p ../sreBuild (the '-p' flag gracefully handle a pre-existing directory)
- * cd ../sreBuild
- * cmake [full-path-of-install-directory]
- * make
- * cd examples
- * ./SRE-Example-00_hello-engine
+ * 'git remote add upstream https://github.com/estrac/SimpleRenderEngine.git'
+ * 'pwd' (Note: use this to get the full-path-of-install-directory used below)
+ * 'git checkout'
+ * 'mkdir -p ../sreBuild ('-p' flag gracefully handles a pre-existing directory)'
+ * 'cd ../sreBuild'
+ * 'cmake [full-path-of-install-directory]'
+ * or for developers: 'cmake [install-dir] -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON'
+ * 'make'
+ * 'cd examples'
+ * './SRE-Example-00_hello-engine'
  * Try other examples
 
 ## Examples
