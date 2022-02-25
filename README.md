@@ -65,9 +65,9 @@ Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. 
 
 ### Windows
 
-#### Install MSYS2 and Tools
-Go to the MSYS2 site <https://www.msys2.org/> and follow instructions to
-install MSYS2 and mingw64
+SRE is fully supported using the MSYS2 Linux-like environment. Go to the MSYS2
+site <https://www.msys2.org/> and follow instructions to install MSYS2 and
+mingw64.
         
 Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
 Windows Start Menu and then run:
@@ -90,20 +90,16 @@ Install SDL2
 
 Notes on using the MSYS2 package manager
  * To see which packages are needed to make a package work properly, use
-
         packman -Qi package_name [e.g. mingw-w64-x86_64-cmake]
-
  * To search for a package available in MSYS2, use the command
-
         pacman -Ss package_name
-
  * To search for an already-installed package, use the command
-
         pacman -Qs package_name [or part of a package name]
 
 ### Install sre
  
 Go to the directory that you want to install SRE into and clone the repository:
+
     cd [directory-to-install-into] 
     git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
 
