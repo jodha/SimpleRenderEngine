@@ -63,7 +63,38 @@ Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. 
  * sudo apt install libsdl2-image-dev
  * sudo apt install libglew-dev
 
-#### Install sre
+### Windows
+
+#### Install MSYS2 and Tools
+ * Go to the MSYS2 site and follow instructions to install MSYS2 and mingw64:
+   ** https://www.msys2.org/
+   ** Follow the instructions on the MSYS2 site to install the base development
+      utilities (like make, grep, gdb, sed, dos2unix, etc.) and the full "compiler
+      toolchain" (gcc, g++, gfortran)
+        pacman -S --needed base-devel mingw-w64-x86_64-toolchain
+ * Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
+   Windows Start Menu and then run:
+        pacman -S vim                    # To install vim editor
+        pacman -S mingw-w64-x86_64-glew  # To install GLEW (see "OpenGL Notes")
+        pacman -S mingw-w64-x86_64-cmake # To install CMake
+        pacman -S mingw-w64-x86_64-qt6   # To install CMake gui
+ * Note that not updating qt leads to weird errors like "error while loading
+   shared libs"
+   ** The cmake executables are:
+        /mingw64/bin/cmake.exe
+        /mingw64/bin/cmake-gui.exe
+ * Install SDL2
+        pacman -S mingw-w64-x86_64-SDL2
+        pacman -S mingw-w64-x86_64-SDL2_image
+ * Notes on using the MSYS2 package manager
+   ** To see which packages are needed to make a package work properly, use
+        packman -Qi package_name [e.g. mingw-w64-x86_64-cmake]
+   ** To search for a package available in MSYS2, use the command
+        pacman -Ss package_name
+   ** To search for an already-installed package, use the command
+        pacman -Qs package_name [or part of a package name]
+
+### Install sre
  
 Clone the library and and take the following steps:
 
