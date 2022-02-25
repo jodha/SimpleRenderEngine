@@ -728,7 +728,7 @@ namespace sre{
                     << e.tfinger.dx << " "
                     << e.tfinger.dy << " "
                     << e.tfinger.pressure << " "
-                    << e.tfinger.windowID << " "
+//                    << e.tfinger.windowID << " "
                     << "#tfinger"
                     << std::endl;
                 break;
@@ -890,7 +890,8 @@ namespace sre{
                     >> e.tfinger.dx
                     >> e.tfinger.dy
                     >> e.tfinger.pressure
-                    >> e.tfinger.windowID;
+//                    >> e.tfinger.windowID
+                    ;
                 break;
             default:
                 LOG_ERROR("Encountered unknown event in m_playbackStream");
