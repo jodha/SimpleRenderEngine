@@ -41,23 +41,21 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 ### Ubuntu Linux
 
-#### Update Ubuntu
-
 Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. Then take these steps:
 
     sudo apt full-upgrade
     sudo apt update
     sudo apt autoremove
 
-#### Install compilers and build tools (if not installed already)
+Install compilers and build tools (if not installed already):
 
     sudo apt install g++
     sudo apt install git
     sudo apt install make
     sudo apt install cmake
-    sudo apt install cmake-curses-gui (this is optional)
+    sudo apt install cmake-curses-gui # This is optional
 
-#### Install libraries (if not installed already)
+Install libraries (if not installed already):
 
     sudo apt install libsdl2-dev
     sudo apt install libsdl2-image-dev
@@ -65,12 +63,12 @@ Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. 
 
 ### Windows
 
-SRE is fully supported using the MSYS2 Linux-like environment. Go to the MSYS2
-site <https://www.msys2.org/> and follow instructions to install MSYS2 and
-mingw64.
-        
-## Install MSYS2 Packages
+SRE is fully supported using the MSYS2 "Linux-like" environment. It is possible to build SRE with Microsoft Visual Studio, but several warnings have not been addressed and several manual steps need to be taken inside Visual Studio to build successfully.
 
+#### Install MSYS2 and Packages
+
+Go to the MSYS2 site <https://www.msys2.org/> and follow instructions to install MSYS2 and mingw64.
+        
 Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
 Windows Start Menu and then run:
 
@@ -89,7 +87,7 @@ Install SDL2:
     pacman -S mingw-w64-x86_64-SDL2
     pacman -S mingw-w64-x86_64-SDL2_image
 
-## Notes on Using the MSYS2 Package Manager
+#### Notes on Using the MSYS2 Package Manager
 
 To see which packages are needed to make a package work properly, use
 
@@ -104,7 +102,12 @@ To search for an already-installed package, use the command
     pacman -Qs package_name [or part of a package name]
 
 
-### Install sre
+### MacOS
+
+TODO: Add MacOS instructions
+
+
+### Install sre (all platforms)
  
 Go to the directory that you want to install SRE into and clone the repository:
 
