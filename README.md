@@ -7,8 +7,8 @@
 This is an update to Morten Nobel-Jørgensen's SimpleRenderEngine (sre). The intent of the updates is to enhance the capabilities and to make the SRE interface easier to use (e.g. not as dependent on advanced C++11/14 features like Lambdas) and with less exposure of OpenGL internals (e.g. by abstracting away direct use of transformation matrices).
 
 Two new cameras (derived from the basic virtual camera) have been added:
-1) A basic "First-Person Surveyor (FPS)" (e.g. a Minecraft-like) camera (demonstrated in 'examples/18_FPS-camera.cpp')
-2) A basic "Flight" camera (demonstrated in 'examples/19_Flight-camera.cpp')
+1) A basic "First-Person Surveyor (FPS)" (e.g. a Minecraft-like) camera (demonstrated in `examples/18_FPS-camera.cpp`)
+2) A basic "Flight" camera (demonstrated in `examples/19_Flight-camera.cpp`)
 
 The goal of SimpleRenderEngine is to provide easy way to get started with graphics programming in 2D or 3D without a deep knowledge about the low-level graphics APIs like OpenGL, DirectX and Vulkan.
  
@@ -45,80 +45,100 @@ To keep sre as simple and flexible as possible the following features are not a 
 
 Use the Ubuntu 'Software Updater' utility to ensure Ubuntu is fully up-to-date. Then take these steps:
 
- * sudo apt full-upgrade
- * sudo apt update
- * sudo apt autoremove
+    sudo apt full-upgrade
+    sudo apt update
+    sudo apt autoremove
 
 #### Install compilers and build tools (if not installed already)
 
- * sudo apt install g++
- * sudo apt install git
- * sudo apt install make
- * sudo apt install cmake
- * sudo apt install cmake-curses-gui (this is optional)
+    sudo apt install g++
+    sudo apt install git
+    sudo apt install make
+    sudo apt install cmake
+    sudo apt install cmake-curses-gui (this is optional)
 
 #### Install libraries (if not installed already)
 
- * sudo apt install libsdl2-dev
- * sudo apt install libsdl2-image-dev
- * sudo apt install libglew-dev
+    sudo apt install libsdl2-dev
+    sudo apt install libsdl2-image-dev
+    sudo apt install libglew-dev
 
 ### Windows
 
 #### Install MSYS2 and Tools
- * Go to the MSYS2 site and follow instructions to install MSYS2 and mingw64:
+Go to the MSYS2 site <https://www.msys2.org/> and follow instructions to
+install MSYS2 and mingw64
+        
+Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
+Windows Start Menu and then run:
 
-        https://www.msys2.org/
+    pacman -S --needed base-devel mingw-w64-x86_64-toolchain
+    pacman -S mingw-w64-x86_64-glew  # To install GLEW (see "OpenGL Notes")
+    pacman -S mingw-w64-x86_64-cmake # To install CMake
+    pacman -S mingw-w64-x86_64-qt6   # To install CMake gui
+    # Note that not updating qt leads to weird errors like "error while loading shared libs"
 
- * Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
-   Windows Start Menu and then run:
+The cmake executables are:
 
-        pacman -S --needed base-devel mingw-w64-x86_64-toolchain
-        pacman -S mingw-w64-x86_64-glew  # To install GLEW (see "OpenGL Notes")
-        pacman -S mingw-w64-x86_64-cmake # To install CMake
-        pacman -S mingw-w64-x86_64-qt6   # To install CMake gui
-        # Note that not updating qt leads to weird errors like "error while loading shared libs"
+    /mingw64/bin/cmake.exe
+    /mingw64/bin/cmake-gui.exe
 
-    * The cmake executables are:
+Install SDL2
 
-        /mingw64/bin/cmake.exe
-        /mingw64/bin/cmake-gui.exe
+    pacman -S mingw-w64-x86_64-SDL2
+    pacman -S mingw-w64-x86_64-SDL2_image
 
- * Install SDL2
-
-        pacman -S mingw-w64-x86_64-SDL2
-        pacman -S mingw-w64-x86_64-SDL2_image
-
- * Notes on using the MSYS2 package manager
-    * To see which packages are needed to make a package work properly, use
+Notes on using the MSYS2 package manager
+ * To see which packages are needed to make a package work properly, use
 
         packman -Qi package_name [e.g. mingw-w64-x86_64-cmake]
 
-    * To search for a package available in MSYS2, use the command
+ * To search for a package available in MSYS2, use the command
 
         pacman -Ss package_name
 
-    * To search for an already-installed package, use the command
+ * To search for an already-installed package, use the command
 
         pacman -Qs package_name [or part of a package name]
 
 ### Install sre
  
- * cd [directory-to-install-into] 
- * git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre (where 'sre' is the installation directory that will be created for sre). Note that if you have forked the repository you should replace 'estrac' with your username.
- * 'cd sre'
- * If you have forked the repository, run the following to stay in-sync:
- * 'git remote add upstream https://github.com/estrac/SimpleRenderEngine.git'
- * 'pwd' (Note: use this to get the full-path-of-install-directory used below)
- * 'git checkout'
- * 'mkdir -p ../sreBuild ('-p' flag gracefully handles a pre-existing directory)'
- * 'cd ../sreBuild'
- * 'cmake [full-path-of-install-directory]'
- * or for developers: 'cmake [install-dir] -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON'
- * 'make'
- * 'cd examples'
- * './SRE-Example-00_hello-engine'
- * Try other examples
+Go to the directory that you want to install SRE into and clone the repository:
+    cd [directory-to-install-into] 
+    git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
+
+In the above command, 'sre' is the installation directory that will be created for sre. Note that if you have forked the repository you should replace 'estrac' with your username.
+
+Go to the installation directory:
+
+    cd sre
+
+If you have forked the repository, run the following to stay in-sync:
+
+    git remote add upstream https://github.com/estrac/SimpleRenderEngine.git
+
+Use the `pwd` command to get the full-path-of-install-directory used below
+
+    pwd
+
+The `-p` flag gracefully handles a pre-existing directory
+
+    mkdir -p ../sreBuild
+
+Go to the build directory and run CMake:
+
+    cd ../sreBuild
+    cmake [full-path-of-install-directory]
+
+or for developers who want to build a Debug version and run tests:
+
+    cmake [install-dir] -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON
+
+Finally, build SRE and run the examples
+
+    make
+    cd examples
+    ./SRE-Example-00_hello-engine
 
 ## Examples
  
