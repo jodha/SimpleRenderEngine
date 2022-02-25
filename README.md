@@ -69,32 +69,40 @@ SRE is fully supported using the MSYS2 Linux-like environment. Go to the MSYS2
 site <https://www.msys2.org/> and follow instructions to install MSYS2 and
 mingw64.
         
+## Install MSYS2 Packages
+
 Open 'MSYS2 MinGW64 64-bit' command line from 'MSYS2 64bit' folder in the
 Windows Start Menu and then run:
 
-    pacman -S --needed base-devel mingw-w64-x86_64-toolchain
-    pacman -S mingw-w64-x86_64-glew  # To install GLEW (see "OpenGL Notes")
-    pacman -S mingw-w64-x86_64-cmake # To install CMake
-    pacman -S mingw-w64-x86_64-qt6   # To install CMake gui
-    # Note that not updating qt leads to weird errors like "error while loading shared libs"
+    pacman -S --needed base-devel mingw-w64-x86_64-toolchain # Install compilers and tools
+    pacman -S mingw-w64-x86_64-glew  # Install GLEW
+    pacman -S mingw-w64-x86_64-cmake # Install CMake
+    pacman -S mingw-w64-x86_64-qt6   # Install CMake gui (not keeping qt in-sync with CMake can lead to "error while loading shared libs")
 
 The cmake executables are:
 
     /mingw64/bin/cmake.exe
     /mingw64/bin/cmake-gui.exe
 
-Install SDL2
+Install SDL2:
 
     pacman -S mingw-w64-x86_64-SDL2
     pacman -S mingw-w64-x86_64-SDL2_image
 
-Notes on using the MSYS2 package manager
- * To see which packages are needed to make a package work properly, use
-        packman -Qi package_name [e.g. mingw-w64-x86_64-cmake]
- * To search for a package available in MSYS2, use the command
-        pacman -Ss package_name
- * To search for an already-installed package, use the command
-        pacman -Qs package_name [or part of a package name]
+## Notes on Using the MSYS2 Package Manager
+
+To see which packages are needed to make a package work properly, use
+
+    packman -Qi package_name [e.g. mingw-w64-x86_64-cmake]
+
+To search for a package available in MSYS2, use the command
+
+    pacman -Ss package_name
+
+To search for an already-installed package, use the command
+
+    pacman -Qs package_name [or part of a package name]
+
 
 ### Install sre
  
@@ -103,7 +111,7 @@ Go to the directory that you want to install SRE into and clone the repository:
     cd [directory-to-install-into] 
     git clone --recurse-submodules https://github.com/estrac/SimpleRenderEngine.git sre
 
-In the above command, 'sre' is the installation directory that will be created for sre. Note that if you have forked the repository you should replace 'estrac' with your username.
+In the above command, `sre` is the installation directory that will be created for SRE. Note that if you have forked the repository you should replace `estrac` with your username.
 
 Go to the installation directory:
 
