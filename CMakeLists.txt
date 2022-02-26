@@ -16,9 +16,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-SET(CMAKE_PREFIX_PATH "/mingw64/lib/cmake/SDL2;/mingw64/include/SDL2")
+SET(CMAKE_PREFIX_PATH "/mingw64/lib;/ming64/lib/cmake/SDL2;/mingw64/include/SDL2")
 
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" ${SDL2_SEARCH_PATHS})
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 # Uncomment the following to build on Windows outside the MSYS2 environment
 #IF (WIN32)
