@@ -65,12 +65,6 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}      
       uses: msys2/setup-msys2@v2
 
-    - name: test MSYS
-      if: ${{ matrix.os == 'windows-latest' }}      
-      run: |
-        $env:MSYSTEM = 'MSYS'
-        msys2 ./test.sh MSYS
-        
     - name: install dependencies windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
