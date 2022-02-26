@@ -37,6 +37,8 @@ SET(SDL2_SEARCH_PATHS
 	/opt
         /ProgramData/Microsoft
         /var/cache/pacman/pkg
+        /mingw64/lib
+        /mingw64/include
 )
 
 FIND_PATH(SDL2_INCLUDE_DIR SDL.h
