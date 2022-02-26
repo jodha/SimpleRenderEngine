@@ -25,6 +25,34 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 #    SET(SDL2_INCLUDE_DIR "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/include" CACHE STRING "Directory path to SDL2 header files")
 #    SET(SDL2MAIN_LIBRARY "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/lib/x86/SDL2main.lib" CACHE STRING "File path to SDL2main.lib")
 #ENDIF(WIN32)
+
+SET(SDL2_SEARCH_PATHS
+	~/Library/Frameworks
+	/Library/Frameworks
+	/usr/local
+	/usr
+	/sw # Fink
+	/opt/local # DarwinPorts
+	/opt/csw # Blastwave
+	/opt
+        /ProgramData/Microsoft
+)
+
+FIND_PATH(SDL2_INCLUDE_DIR SDL.h
+	HINTS
+	$ENV{SDL2DIR}
+	PATH_SUFFIXES include/SDL2 include
+	PATHS ${SDL2_SEARCH_PATHS}
+)
+
+FIND_LIBRARY(SDL2_LIBRARY_TEMP
+	NAMES SDL2
+	HINTS
+	$ENV{SDL2DIR}
+	PATH_SUFFIXES lib64 lib
+	PATHS ${SDL2_SEARCH_PATHS}
+)
+
 find_package(SDL2 REQUIRED)
 set(SRE_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
 
