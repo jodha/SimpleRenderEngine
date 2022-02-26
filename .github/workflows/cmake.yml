@@ -94,6 +94,7 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S mingw-w64-x86_64-SDL2 --noconfirm 
+        pacman -Qi mingw-w64-x86_64-SDL2
 
     - name: install dependencies sdl2_image windows
       if: ${{ matrix.os == 'windows-latest' }}
