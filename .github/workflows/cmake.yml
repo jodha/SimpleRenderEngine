@@ -61,7 +61,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt install ccache
 
-    - names: install dependencies windows
+    - name: install dependencies windows
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
