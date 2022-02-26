@@ -389,6 +389,10 @@ namespace sre{
         r->swapWindow();
     }
 
+    int SDLRenderer::getFrameNumber() {
+        return frameNumber;
+    }
+
     void SDLRenderer::startEventLoop(std::shared_ptr<VR> vr) {
         if (!window){
             LOG_INFO("SDLRenderer::init() not called");
@@ -1130,7 +1134,7 @@ namespace sre{
 
     bool
     SDLRenderer::isKeyPressed(SDL_Keycode keyCode) {
-        for (SDL_Keycode key : keyPressed) {
+        for (auto key : keyPressed) {
             if (key == keyCode) {
                 return true;
             }

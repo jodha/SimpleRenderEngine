@@ -119,6 +119,7 @@ public:
     void drawFrame();                                           // Draw a single frame. This is useful when application graphics need to be updated from deep
                                                                 // within a time-consuming function while not desiring user input (for example, a progress
                                                                 // dialog).
+    int getFrameNumber();                                       // Get the current drawing frame number. This is useful to label output (e.g. screen images).
 
     void startEventLoop(std::shared_ptr<VR> vr);                // Start event loop for VR
 
