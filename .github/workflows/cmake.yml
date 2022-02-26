@@ -60,11 +60,16 @@ jobs:
     - name: install_ccache ubuntu
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt install ccache
-
+      
+    - name: test MSYS
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        $env:MSYSTEM = 'MSYS'
+        msys2 ./test.sh MSYS
+        
     - name: install dependencies windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
-        shell: msys2 {0}
         pacman -S --needed base-devel mingw-w64-x86_64-toolchain 
         pacman -S mingw-w64-x86_64-glew 
         pacman -S mingw-w64-x86_64-cmake
