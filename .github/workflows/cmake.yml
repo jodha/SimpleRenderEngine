@@ -106,7 +106,7 @@ jobs:
             ${ { matrix.config.name } }-ccache-
 
     - name: Configure CMake linux env
-      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == "macos-latest' }}
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only
       # required if you are using a single-configuration generator such as make.
@@ -126,7 +126,7 @@ jobs:
 
     - name: Build linux env
       # Build your pogram with the given configuration
-      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == "macos-latest' }}
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       run: |
         file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
