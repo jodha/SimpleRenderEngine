@@ -69,10 +69,10 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
-        pacman -S --needed base-devel mingw-w64-x86_64-toolchain 
-        pacman -S mingw-w64-x86_64-glew 
-        pacman -S mingw-w64-x86_64-cmake
-        pacman -S mingw-w64-x86_64-qt6   
+        pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+        pacman -S mingw-w64-x86_64-glew --noconfirm
+        pacman -S mingw-w64-x86_64-cmake --noconfirm
+        pacman -S mingw-w64-x86_64-qt6  --noconfirm
 
     - name: Checkout repository
       uses: actions/checkout@v2
