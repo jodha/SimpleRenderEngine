@@ -16,20 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-SET(SDL2_SEARCH_PATHS
-	~/Library/Frameworks
-	/Library/Frameworks
-	/usr/local
-	/usr
-	/sw # Fink
-	/opt/local # DarwinPorts
-	/opt/csw # Blastwave
-	/opt
-        /ProgramData/Microsoft
-        /var/cache/pacman/pkg
-        /mingw64/lib/cmake/SDL2
-        /mingw64/include/SDL2
-)
+SET(CMAKE_PREFIX_PATH /mingw64/lib/cmake/SDL2; /mingw64/include/SDL2)
 
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" ${SDL2_SEARCH_PATHS})
 
@@ -41,7 +28,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake" ${SDL2_S
 #    SET(SDL2MAIN_LIBRARY "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/lib/x86/SDL2main.lib" CACHE STRING "File path to SDL2main.lib")
 #ENDIF(WIN32)
 
-find_package(SDL2 REQUIRED PATHS ${SDL2_SEARCH_PATHS})
+find_package(SDL2 REQUIRED PATHS)
 set(SRE_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
 
 enable_testing()
