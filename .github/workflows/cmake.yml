@@ -63,8 +63,8 @@ jobs:
 
     - name: install dependencies windows
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: msys2 {0}
       run: |
+        shell: msys2 {0}
         pacman -S --needed base-devel mingw-w64-x86_64-toolchain 
         pacman -S mingw-w64-x86_64-glew 
         pacman -S mingw-w64-x86_64-cmake
