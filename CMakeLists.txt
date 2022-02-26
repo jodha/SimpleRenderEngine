@@ -36,6 +36,7 @@ SET(SDL2_SEARCH_PATHS
 	/opt/csw # Blastwave
 	/opt
         /ProgramData/Microsoft
+        /var/cache/pacman/pkg
 )
 
 FIND_PATH(SDL2_INCLUDE_DIR SDL.h
