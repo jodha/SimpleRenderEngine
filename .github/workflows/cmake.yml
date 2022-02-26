@@ -65,10 +65,10 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
-      pacman -S --needed base-devel mingw-w64-x86_64-toolchain 
-      pacman -S mingw-w64-x86_64-glew 
-      pacman -S mingw-w64-x86_64-cmake
-      pacman -S mingw-w64-x86_64-qt6   # Install CMake gui (not keeping qt in-sync with CMake can lead t
+        pacman -S --needed base-devel mingw-w64-x86_64-toolchain 
+        pacman -S mingw-w64-x86_64-glew 
+        pacman -S mingw-w64-x86_64-cmake
+        pacman -S mingw-w64-x86_64-qt6   
 
     - name: Checkout repository
       uses: actions/checkout@v2
