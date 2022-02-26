@@ -62,7 +62,8 @@ jobs:
       run: sudo apt install ccache
       
     - name: test MSYS
-      if: ${{ matrix.os == 'windows-latest' }}
+      if: ${{ matrix.os == 'windows-latest' }}      
+      uses: msys2/setup-msys2@v2
       run: |
         $env:MSYSTEM = 'MSYS'
         msys2 ./test.sh MSYS
