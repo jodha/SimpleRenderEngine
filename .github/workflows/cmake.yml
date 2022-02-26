@@ -73,6 +73,8 @@ jobs:
         pacman -S mingw-w64-x86_64-glew --noconfirm
         pacman -S mingw-w64-x86_64-cmake --noconfirm
         pacman -S mingw-w64-x86_64-qt6  --noconfirm
+        pacman -S mingw-w64-x86_64-SDL2 --noconfirm 
+        pacman -S mingw-w64-x86_64-SDL2_image --noconfirm
 
     - name: Checkout repository
       uses: actions/checkout@v2
