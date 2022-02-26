@@ -65,13 +65,28 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}      
       uses: msys2/setup-msys2@v2
 
-    - name: install dependencies windows
+    - name: install dependencies windows mingw toolchain
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
         pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+
+    - name: install dependencies windows glew
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
         pacman -S mingw-w64-x86_64-glew --noconfirm
+
+    - name: install dependencies windows cmake
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
         pacman -S mingw-w64-x86_64-cmake --noconfirm
+
+    - name: install dependencies windows qt6
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
         pacman -S mingw-w64-x86_64-qt6  --noconfirm
 
     - name: install dependencies sdl2 windows
@@ -79,6 +94,11 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S mingw-w64-x86_64-SDL2 --noconfirm 
+
+    - name: install dependencies sdl2_image windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
         pacman -S mingw-w64-x86_64-SDL2_image --noconfirm
 
     - name: Checkout repository
