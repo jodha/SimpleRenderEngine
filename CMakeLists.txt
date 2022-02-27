@@ -16,6 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+SET(CMAKE_PREFIX_PATH "/var/cache/pacman/pkg/mingw64/lib;/var/cache/pacman/pkg/ming64/lib/cmake/SDL2;/var/cache/pacman/pkg/mingw64/include/SDL2")
+
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 # Uncomment the following to build on Windows outside the MSYS2 environment
@@ -25,6 +27,8 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 #    SET(SDL2_INCLUDE_DIR "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/include" CACHE STRING "Directory path to SDL2 header files")
 #    SET(SDL2MAIN_LIBRARY "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/lib/x86/SDL2main.lib" CACHE STRING "File path to SDL2main.lib")
 #ENDIF(WIN32)
+
+find_package(SDL2 REQUIRED PATHS /mingw64/lib/cmake/SDL2)
 find_package(SDL2 REQUIRED)
 set(SRE_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
 

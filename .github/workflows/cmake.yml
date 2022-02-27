@@ -6,21 +6,30 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
 
 jobs:
-  build:
-    # The CMake configure and build commands are platform agnostic and should
-    # work equally well on Windows, Mac, and Linux.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: macos-latest
-          
+
+  build_and_test:
+    name: >
+      Build and test a ${{ matrix.build }} version of SRE on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest ]
+#        os: [ windows-latest ]
+        build: [Debug]
+        include:
+          - os: ubuntu-latest
+            target: Linux
+          - os: macos-latest
+            target: Macos
+#          - os: windows-latest
+#            target: Windows
+
     steps:
 
     - name: Cache sdl2 dependencies
+      if: ${{ matrix.os == 'macos-latest' }}
       uses: actions/cache@v2
       id: caching_worked
       with:
@@ -33,12 +42,67 @@ jobs:
         restore-keys: |
           ${{ runner.OS }}-ccache-
           
-    - name: install_sdl2
-      run: brew install sdl2 sdl2_image
-    
-    - name: install_ccache
-      # if: steps.caching_worked.outputs.cache-hit != 'true'
+    - name: install_sdl2 macos
+      if: ${{ matrix.os == 'macos-latest' }}
+      run:  brew install sdl2 sdl2_image
+
+    - name: install_sdl2 ubuntu
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: | 
+        sudo apt install libsdl2-dev
+        sudo apt install libsdl2-image-dev
+        sudo apt install libglew-dev
+
+    - name: install_ccache macos
+      if: ${{ matrix.os == 'macos-latest' }}
       run: brew install ccache
+
+    - name: install_ccache ubuntu
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: sudo apt install ccache
+      
+    - name: 'Setup MSYS2'
+      if: ${{ matrix.os == 'windows-latest' }}      
+      uses: msys2/setup-msys2@v2
+
+    - name: install dependencies windows mingw toolchain
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+
+    - name: install dependencies windows glew
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S mingw-w64-x86_64-glew --noconfirm
+
+    - name: install dependencies windows cmake
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S mingw-w64-x86_64-cmake --noconfirm
+
+    - name: install dependencies windows qt6
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S mingw-w64-x86_64-qt6  --noconfirm
+
+    - name: install dependencies sdl2 windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S mingw-w64-x86_64-SDL2 --noconfirm 
+        pacman -Qi mingw-w64-x86_64-SDL2
+        pacman -Qk mingw-w64-x86_64-SDL2
+        pacman -Ql mingw-w64-x86_64-SDL2
+
+    - name: install dependencies sdl2_image windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        pacman -S mingw-w64-x86_64-SDL2_image --noconfirm
 
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -64,18 +128,28 @@ jobs:
         restore-keys: |
             ${ { matrix.config.name } }-ccache-
 
-    - name: Configure CMake
+    - name: Configure CMake linux env
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only
       # required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |
         execute_process(
-           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
         )
 
-    - name: Build
+    - name: Configure CMake windows env
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: cmake -P {0}
+      run: |
+        execute_process(
+           COMMAND cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+        )
+
+    - name: Build linux env
       # Build your pogram with the given configuration
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       run: |
         file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
@@ -88,7 +162,25 @@ jobs:
           set(ENV{CCACHE_MAXSIZE} "600M")
         endif()
         execute_process(
-          COMMAND cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j8
+          COMMAND cmake --build ${{github.workspace}}/build --config ${{matrix.build}} -j8
+        )
+
+    - name: Build linux windows
+      # Build your pogram with the given configuration
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: cmake -P {0}
+      run: |
+        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
+        set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
+        set(ENV{CCACHE_DIR} "${ccache_basedir}\.ccache")
+        set(ENV{CCACHE_COMPRESS} "true")
+        set(ENV{CCACHE_COMPRESSLEVEL} "6")
+        set(ENV{CCACHE_MAXSIZE} "400M")
+        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
+          set(ENV{CCACHE_MAXSIZE} "600M")
+        endif()
+        execute_process(
+          COMMAND cmake --build ${{github.workspace}}\build --config ${{matrix.build}} -j8
         )
 
     - name: ccache statistics
