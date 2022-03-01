@@ -113,7 +113,7 @@ public:
         ImVec2 imPos(0, 0);
         ImGui::SetNextWindowSize(imSize);                                   // imgui window size should have same width as SDL window size
         ImGui::SetNextWindowPos(imPos);
-        ImGui::Begin("",nullptr,ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoScrollbar);
+        ImGui::Begin("Top Text",nullptr,ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoScrollbar);
 
         ImGui::ColorEdit4("Selected color",&color.r, ImGuiColorEditFlags_NoInputs);
         ImGui::TextWrapped("Mouse pos %i %i",mouseX, mouseY);
