@@ -179,7 +179,7 @@ jobs:
       run: |
         pwd
         cd ../build
-        cmake --config ${{matrix.build}} 
+        cmake 
 
     - name: ccache statistics
       shell: cmake -P {0}
@@ -199,7 +199,7 @@ jobs:
 
     - name: Test
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: cmake -P {0}
+      shell: msys2 {0}
       run: |
         cd ../build 
         ctest
