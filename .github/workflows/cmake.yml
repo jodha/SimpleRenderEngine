@@ -178,9 +178,7 @@ jobs:
       shell: msys2 {0}
       run: |
         pwd
-        cd ..
-        mkdir build
-        cd build
+        cd ../build
         cmake --config ${{matrix.build}} -j8
 
     - name: ccache statistics
