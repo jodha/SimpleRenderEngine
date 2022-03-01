@@ -175,7 +175,7 @@ jobs:
     - name: Build windows
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: cmake -P {0}
+      shell: msys2 {0}
       run: |
         file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
         set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
@@ -186,9 +186,11 @@ jobs:
         if ("${{ matrix.config.cxx }}" STREQUAL "cl")
           set(ENV{CCACHE_MAXSIZE} "600M")
         endif()
-        execute_process(
-          COMMAND cmake --build ${{github.workspace}}\build --config ${{matrix.build}} -j8
-        )
+        pwd
+        cd ..
+        mkdir build
+        cd build
+        cmake --config ${{matrix.build}} -j8
 
     - name: ccache statistics
       shell: cmake -P {0}
