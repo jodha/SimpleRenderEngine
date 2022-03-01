@@ -66,6 +66,7 @@ ENDIF (APPLE)
 #    SET(SDL2_IMAGE_INCLUDE_DIR "${CMAKE_BINARY_DIR}/sre_libs/SDL2_image-2.0.5/include" CACHE STRING "Directory path to SDL2 header files")
 #ENDIF(WIN32)
 find_package(SDL2_image REQUIRED)
+find_package(SDL2 REQUIRED PATHS /min64/lib) 
 list(APPEND SRE_INCLUDE_DIRS ${SDL2_IMAGE_INCLUDE_DIRS})
 
 option(USE_OPENVR "Enable OpenVR" OFF)
