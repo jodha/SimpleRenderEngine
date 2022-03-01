@@ -105,6 +105,9 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S mingw-w64-x86_64-SDL2_image --noconfirm
+        pacman -Qi mingw-w64-x86_64-SDL2_image
+        pacman -Qk mingw-w64-x86_64-SDL2_image
+        pacman -Ql mingw-w64-x86_64-SDL2_image
 
     - name: Checkout repository
       uses: actions/checkout@v2
