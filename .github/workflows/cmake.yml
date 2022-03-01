@@ -149,7 +149,7 @@ jobs:
         cd ..
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON 
+        cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON ../SimpleRenderEngine
 
     - name: Build linux env
       # Build your pogram with the given configuration
