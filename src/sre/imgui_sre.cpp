@@ -270,10 +270,17 @@ bool ImGui_SRE_ProcessEvent(SDL_Event *event)
             int key = event->key.keysym.scancode;
             IM_ASSERT(key >= 0 && key < IM_ARRAYSIZE(io.KeysDown));
             io.KeysDown[key] = (event->type == SDL_KEYDOWN);
-            io.KeyShift = ((SDLRenderer::instance->getKeymodState() & KMOD_SHIFT) != 0);
-            io.KeyCtrl = ((SDLRenderer::instance->getKeymodState() & KMOD_CTRL) != 0);
-            io.KeyAlt = ((SDLRenderer::instance->getKeymodState() & KMOD_ALT) != 0);
-            io.KeySuper = ((SDLRenderer::instance->getKeymodState() & KMOD_GUI) != 0);
+            if (SDLRenderer::instance != nullptr) {
+                io.KeyShift = ((SDLRenderer::instance->getKeymodState() & KMOD_SHIFT) != 0);
+                io.KeyCtrl = ((SDLRenderer::instance->getKeymodState() & KMOD_CTRL) != 0);
+                io.KeyAlt = ((SDLRenderer::instance->getKeymodState() & KMOD_ALT) != 0);
+                io.KeySuper = ((SDLRenderer::instance->getKeymodState() & KMOD_GUI) != 0);
+            } else {
+                io.KeyShift = ((SDL_GetModState() & KMOD_SHIFT) != 0);
+                io.KeyCtrl = ((SDL_GetModState() & KMOD_CTRL) != 0);
+                io.KeyAlt = ((SDL_GetModState() & KMOD_ALT) != 0);
+                io.KeySuper = ((SDL_GetModState() & KMOD_GUI) != 0);
+            }
             return true;
         }
     }
@@ -520,8 +527,13 @@ void ImGui_SRE_NewFrame(SDL_Window *window)
 
     // Setup mouse inputs (we already got mouse wheel, keyboard keys & characters from our event handler)
     int mx, my;
-    Uint32 mouse_buttons = SDLRenderer::instance->getMouseState(&mx, &my);
-        io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX);
+    Uint32 mouse_buttons;
+    if (SDLRenderer::instance != nullptr) {
+        mouse_buttons = SDLRenderer::instance->getMouseState(&mx, &my);
+    } else {
+        mouse_buttons = SDL_GetMouseState(&mx, &my);
+    }
+    io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX);
     io.MouseDown[0] = g_MousePressed[0] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;  // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
     io.MouseDown[1] = g_MousePressed[1] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
     io.MouseDown[2] = g_MousePressed[2] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
