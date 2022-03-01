@@ -15,16 +15,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest ]
-#        os: [ windows-latest ]
+#        os: [ubuntu-latest, macos-latest ]
+        os: [ windows-latest ]
         build: [Debug]
         include:
-          - os: ubuntu-latest
-            target: Linux
-          - os: macos-latest
-            target: Macos
-#          - os: windows-latest
-#            target: Windows
+#          - os: ubuntu-latest
+#            target: Linux
+#          - os: macos-latest
+#            target: Macos
+          - os: windows-latest
+            target: Windows
 
     steps:
 
@@ -70,6 +70,8 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+        pacman -S mingw-w64-x86_64-ninja --noconfirm
+        pacman -S mingw-w64-x86_64-ccache --noconfirm
 
     - name: install dependencies windows glew
       if: ${{ matrix.os == 'windows-latest' }}
@@ -139,18 +141,20 @@ jobs:
            COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
         )
 
+
     - name: Configure CMake windows env
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: cmake -P {0}
+      shell: msys2 {0}
       run: |
-        execute_process(
-           COMMAND cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
-        )
+        cd ..
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON 
 
     - name: Build linux env
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
-      shell: cmake -P {0}
+      shell: bash
       run: |
         file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
         set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
@@ -165,7 +169,7 @@ jobs:
           COMMAND cmake --build ${{github.workspace}}/build --config ${{matrix.build}} -j8
         )
 
-    - name: Build linux windows
+    - name: Build windows
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'windows-latest' }}
       shell: cmake -P {0}
