@@ -179,7 +179,7 @@ jobs:
       run: |
         pwd
         cd ../build
-        cmake -S ../SimpleRenderEngine -B .
+        make -j8 all 
 
     - name: ccache statistics
       shell: cmake -P {0}
