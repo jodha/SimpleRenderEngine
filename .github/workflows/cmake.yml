@@ -179,7 +179,7 @@ jobs:
       run: |
         pwd
         cd ../build
-        make -j8 all 
+        make -j8 
 
     - name: ccache statistics
       shell: cmake -P {0}
