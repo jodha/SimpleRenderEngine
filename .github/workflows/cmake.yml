@@ -179,6 +179,7 @@ jobs:
       run: |
         pwd
         cd ../build
+        pwd 
         make -j8 
 
     - name: ccache statistics
