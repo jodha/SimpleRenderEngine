@@ -180,6 +180,7 @@ jobs:
         pwd
         cd ../build
         pwd 
+        ls -l
         make -j8 
 
     - name: ccache statistics
