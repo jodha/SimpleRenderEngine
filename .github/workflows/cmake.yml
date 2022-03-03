@@ -131,7 +131,7 @@ jobs:
         restore-keys: |
             ${ { matrix.os } }-ccache-
 
-    - name: Configure CMake linux env
+    - name: Configure CMake linux 
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only
@@ -142,7 +142,7 @@ jobs:
            COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
         )
 
-    - name: Configure CMake windows env
+    - name: Configure CMake windows 
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
@@ -151,7 +151,7 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON ../SimpleRenderEngine
 
-    - name: Build linux env
+    - name: Build linux 
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
@@ -185,7 +185,7 @@ jobs:
         set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
         execute_process(COMMAND ccache -s)
 
-    - name: Test
+    - name: Test Linux
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.  
@@ -193,7 +193,7 @@ jobs:
       # detail
       run: ctest 
 
-    - name: Test
+    - name: Test Windows
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
