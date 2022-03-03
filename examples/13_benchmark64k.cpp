@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <cmath>
 
 #include "sre/Texture.hpp"
 #include "sre/Renderer.hpp"
