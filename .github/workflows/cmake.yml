@@ -15,8 +15,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest windows-latest]
-        build: [Debug]
+        os: [ ubuntu-latest, macos-latest windows-latest ]
+        build: [ Debug ]
         include:
           - os: ubuntu-latest
             target: Linux
@@ -36,7 +36,7 @@ jobs:
           ~/.sdl2
           ~/.sdl2_image
           ~/.ccache
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${ { matrix.os.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
 
         restore-keys: |
           ${{ runner.OS }}-ccache-
@@ -128,9 +128,9 @@ jobs:
           .ccache
           .sdl2
           .sdl2_image
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${ { matrix.os } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
         restore-keys: |
-            ${ { matrix.config.name } }-ccache-
+            ${ { matrix.os } }-ccache-
 
     - name: Configure CMake linux env
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
@@ -140,9 +140,8 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |
         execute_process(
-           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
         )
-
 
     - name: Configure CMake windows env
       if: ${{ matrix.os == 'windows-latest' }}
@@ -151,7 +150,7 @@ jobs:
         cd ..
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON ../SimpleRenderEngine
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON ../SimpleRenderEngine
 
     - name: Build linux env
       # Build your pogram with the given configuration
@@ -164,11 +163,8 @@ jobs:
         set(ENV{CCACHE_COMPRESS} "true")
         set(ENV{CCACHE_COMPRESSLEVEL} "6")
         set(ENV{CCACHE_MAXSIZE} "400M")
-        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
-          set(ENV{CCACHE_MAXSIZE} "600M")
-        endif()
         execute_process(
-          COMMAND cmake --build ${{github.workspace}}/build --config ${{matrix.build}} -j8
+          COMMAND cmake --build ${{github.workspace}}/build --config ${{ matrix.build }} -j8
         )
 
     - name: Build windows
