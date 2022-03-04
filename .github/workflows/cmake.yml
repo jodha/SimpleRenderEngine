@@ -11,20 +11,18 @@ jobs:
 
   build_and_test:
     name: >
-      Build and test a ${{ matrix.build }} version of SRE on ${{ matrix.os }}
+      Build and test a debug version of SRE on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest ]
-#        os: [ windows-latest ]
-        build: [Debug]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
         include:
           - os: ubuntu-latest
             target: Linux
           - os: macos-latest
             target: Macos
-#          - os: windows-latest
-#            target: Windows
+          - os: windows-latest
+            target: Windows
 
     steps:
 
@@ -37,7 +35,7 @@ jobs:
           ~/.sdl2
           ~/.sdl2_image
           ~/.ccache
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${ { matrix.os.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
 
         restore-keys: |
           ${{ runner.OS }}-ccache-
@@ -70,6 +68,8 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+        pacman -S mingw-w64-x86_64-ninja --noconfirm
+        pacman -S mingw-w64-x86_64-ccache --noconfirm
 
     - name: install dependencies windows glew
       if: ${{ matrix.os == 'windows-latest' }}
@@ -103,6 +103,9 @@ jobs:
       shell: msys2 {0}
       run: |
         pacman -S mingw-w64-x86_64-SDL2_image --noconfirm
+        pacman -Qi mingw-w64-x86_64-SDL2_image
+        pacman -Qk mingw-w64-x86_64-SDL2_image
+        pacman -Ql mingw-w64-x86_64-SDL2_image
 
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -124,11 +127,11 @@ jobs:
           .ccache
           .sdl2
           .sdl2_image
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${ { matrix.os } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
         restore-keys: |
-            ${ { matrix.config.name } }-ccache-
+            ${ { matrix.os } }-ccache-
 
-    - name: Configure CMake linux env
+    - name: Configure CMake linux 
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only
@@ -136,18 +139,19 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |
         execute_process(
-           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
+           COMMAND cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
         )
 
-    - name: Configure CMake windows env
+    - name: Configure CMake windows 
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: cmake -P {0}
+      shell: msys2 {0}
       run: |
-        execute_process(
-           COMMAND cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
-        )
+        cd ..
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Debug -DINSTALL_GTEST=ON -DUSE_SRE_TEST_AND_UTILS:BOOL=ON -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -D CMAKE_FIND_DEBUG_MODE=ON ../SimpleRenderEngine
 
-    - name: Build linux env
+    - name: Build linux 
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       shell: cmake -P {0}
@@ -158,30 +162,20 @@ jobs:
         set(ENV{CCACHE_COMPRESS} "true")
         set(ENV{CCACHE_COMPRESSLEVEL} "6")
         set(ENV{CCACHE_MAXSIZE} "400M")
-        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
-          set(ENV{CCACHE_MAXSIZE} "600M")
-        endif()
         execute_process(
-          COMMAND cmake --build ${{github.workspace}}/build --config ${{matrix.build}} -j8
+          COMMAND cmake --build ${{github.workspace}}/build --config Debug -j8
         )
 
-    - name: Build linux windows
+    - name: Build windows
       # Build your pogram with the given configuration
       if: ${{ matrix.os == 'windows-latest' }}
-      shell: cmake -P {0}
+      shell: msys2 {0}
       run: |
-        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
-        set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
-        set(ENV{CCACHE_DIR} "${ccache_basedir}\.ccache")
-        set(ENV{CCACHE_COMPRESS} "true")
-        set(ENV{CCACHE_COMPRESSLEVEL} "6")
-        set(ENV{CCACHE_MAXSIZE} "400M")
-        if ("${{ matrix.config.cxx }}" STREQUAL "cl")
-          set(ENV{CCACHE_MAXSIZE} "600M")
-        endif()
-        execute_process(
-          COMMAND cmake --build ${{github.workspace}}\build --config ${{matrix.build}} -j8
-        )
+        pwd
+        cd ../build
+        pwd 
+        ls -l
+        cmake --build .
 
     - name: ccache statistics
       shell: cmake -P {0}
@@ -191,9 +185,18 @@ jobs:
         set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
         execute_process(COMMAND ccache -s)
 
-    - name: Test
+    - name: Test Linux
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more
       # detail
-      run: ctest
+      run: ctest 
+
+    - name: Test Windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: msys2 {0}
+      run: |
+        cd ../build 
+        ctest 
+

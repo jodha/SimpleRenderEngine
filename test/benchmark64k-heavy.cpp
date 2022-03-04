@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#define _USE_MATH_DEFINES // for windows!
+#include <cmath>
 
 #include "sre/Texture.hpp"
 #include "sre/Renderer.hpp"
