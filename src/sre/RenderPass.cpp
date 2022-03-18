@@ -345,14 +345,10 @@ namespace sre {
             builder.framebuffer->bind();
         }
         std::vector<Color> res(width * height);
-        std::vector<glm::u8vec4> resUnsigned(width * height);
+        glReadBuffer(GL_BACK);
+        glPixelStorei(GL_PACK_ALIGNMENT, Color::numChannels());
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, res.data());
 
-        glReadPixels(x,y,width, height, GL_RGBA,GL_UNSIGNED_BYTE,resUnsigned.data());
-        for (int i=0;i<resUnsigned.size();i++){
-            for (int j=0;j<4;j++){
-                res[i][j] = resUnsigned[i][j]/255.0f;
-            }
-        }
         // set default framebuffer
         if (builder.framebuffer!=nullptr) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
