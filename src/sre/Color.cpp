@@ -73,4 +73,8 @@ namespace sre {
         a = linear.w;
     }
 
+    int Color::numChannels(){
+        return 4; // Four channels in RGBA
+    }
+
 }

@@ -6,6 +6,8 @@
 #include "sre/SDLRenderer.hpp"
 #include <sre/Skybox.hpp>
 #include <sre/ModelImporter.hpp>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 using namespace sre;
 using namespace glm;
@@ -18,6 +20,7 @@ WorldLights worldLights;
 std::shared_ptr<Skybox> skybox;
 float elapsedTime = 0.0f;
 float worldUnit = 1.0; // Used as a unit of measure to scale all objects
+int frame = 0;
 
 // Objects
 std::shared_ptr<Mesh> gridPlaneTop;
@@ -179,6 +182,24 @@ void frameRender() {
 	torus->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
+
+    frame++;
+    glm::ivec2 windowSize;
+    stbi_flip_vertically_on_write(true);
+    if (frame % 50 == 0) {
+        renderPass.finish();
+        windowSize = Renderer::instance->getDrawableSize();
+
+        std::vector<Color> image;
+        image = renderPass.readPixels(0, 0, windowSize.x, windowSize.y);
+
+        std::stringstream file;
+        file << "Test" << frame << ".png";
+
+        GLsizei stride = Color::numChannels()* windowSize.x; 
+        stbi_write_png(file.str().c_str(), windowSize.x, windowSize.y,
+                                    Color::numChannels(), image.data(), stride);
+    }
 };
 
 // Process keyboard events

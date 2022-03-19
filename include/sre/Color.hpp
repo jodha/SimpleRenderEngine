@@ -22,6 +22,7 @@ namespace sre {
 
         glm::vec4 toLinear();                   // Return color values in linear space
         void setFromLinear(glm::vec4 linear);   // Set sRGBA values from linear space
+        static int numChannels();                      // Number of channels used (RGBA = 4)
 
         float r = 0;
         float g = 0;
