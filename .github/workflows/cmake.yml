@@ -1,11 +1,12 @@
 name: CMake
-
+ 
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-
+  schedule:
+    - cron: '0 1 * * *'
 
 jobs:
 
@@ -47,9 +48,10 @@ jobs:
     - name: install_sdl2 ubuntu
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: | 
-        sudo apt install libsdl2-dev
-        sudo apt install libsdl2-image-dev
-        sudo apt install libglew-dev
+        sudo apt update  
+        sudo apt-get install libsdl2-dev
+        sudo apt-get install libsdl2-image-dev
+        sudo apt-get install libglew-dev
 
     - name: install_ccache macos
       if: ${{ matrix.os == 'macos-latest' }}
