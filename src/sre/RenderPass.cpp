@@ -345,9 +345,8 @@ namespace sre {
             builder.framebuffer->bind();
         }
         std::vector<Color> res(width * height);
-        glReadBuffer(GL_BACK);
-        glPixelStorei(GL_PACK_ALIGNMENT, Color::numChannels());
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, res.data());
+
+        glReadPixels(x, y, width, height, GL_RGBA, GL_FLOAT, res.data());
 
         // set default framebuffer
         if (builder.framebuffer!=nullptr) {
@@ -355,6 +354,23 @@ namespace sre {
         }
 
         return res;
+    }
+
+    std::vector<glm::u8vec4> RenderPass::readRawPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+        assert(mIsFinished);
+        if (builder.framebuffer!=nullptr){
+            builder.framebuffer->bind();
+        }
+        std::vector<glm::u8vec4> bytes(width * height);
+
+        glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bytes.data());
+
+        // set default framebuffer
+        if (builder.framebuffer!=nullptr) {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        return bytes;
     }
 
     void RenderPass::draw(std::shared_ptr<Mesh> &meshPtr, glm::mat4 modelTransform,

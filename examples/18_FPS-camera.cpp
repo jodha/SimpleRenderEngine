@@ -190,13 +190,13 @@ void frameRender() {
         renderPass.finish();
         windowSize = Renderer::instance->getDrawableSize();
 
-        std::vector<Color> image;
-        image = renderPass.readPixels(0, 0, windowSize.x, windowSize.y);
+        std::vector<glm::u8vec4> image;
+        image = renderPass.readRawPixels(0, 0, windowSize.x, windowSize.y);
 
         std::stringstream file;
         file << "Test" << frame << ".png";
 
-        GLsizei stride = Color::numChannels()* windowSize.x; 
+        int stride = Color::numChannels() * windowSize.x; 
         stbi_write_png(file.str().c_str(), windowSize.x, windowSize.y,
                                     Color::numChannels(), image.data(), stride);
     }
