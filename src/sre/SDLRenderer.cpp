@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <string>
 #include <algorithm>
+#include <unistd.h> /* getopt utility for executable options */
 #include <sre/imgui_sre.hpp>
 #include <sre/Log.hpp>
 #include <sre/VR.hpp>
@@ -533,6 +534,73 @@ namespace sre{
         this->appUpdated = appUpdated;
     }
 
+    bool SDLRenderer::parseCommandLine(std::string programName,
+                          bool& recordEvents, bool& playEvents,
+                          int argc, char* argv[]) {
+        int success = true;
+        std::string eventsFile;
+
+        // Get and process arguments passed in to the executable
+
+        // Pass a string of options to getopt:
+        //   The colon after a letter signifies that the option expects an
+        //   argument. The leading colon lets you distinguish between invalid
+        //   option and missing argument cases
+    
+        int option;
+        while(argc != 1 && (option = getopt(argc, argv, ":hr:p:")) != -1) {
+            switch(option) {
+            case 'r':
+                if (!playEvents) {
+                    // optarg contains the argument for the option
+                    eventsFile = optarg;
+                    recordEvents = true;
+                } else {
+                    std::cout << "Error: cannot simultaneously playback and"
+                              << " record events -- choose either option -r"
+                              << " *or* -p" << std::endl;
+                    return success = false;
+                }
+                break;
+            case 'p':
+                if (!recordEvents) {
+                    eventsFile = optarg;
+                    playEvents = true;
+                } else {
+                    std::cout << "Error: cannot simultaneously playback and"
+                              << " record events -- choose either option -r"
+                              << " *or* -p" << std::endl;
+                    return success = false;
+                }
+                break;
+            case 'h':   // help
+                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                       programName.c_str());
+                printf("where\n");
+                printf("    r: (-r filename) record events to filename\n");
+                printf("or\n");
+                printf("    p: (-p filename) playback events from filename\n");
+                return success = false;
+            case ':':
+                // missing option argument
+                // optopt contains the option
+                // argv[0] is the name of the program
+                fprintf(stderr, "%s: option '-%c' requires an argument\n",
+                        argv[0],   optopt);
+                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                       programName.c_str());
+                return success = false;
+            case '?':   // getopt default invalid option
+            default:
+                fprintf(stderr, "Illegal option '-%c\n", optopt);
+                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                       programName.c_str());
+                return success = false;
+            }
+        }
+        return success = true;
+    }
+    
     bool SDLRenderer::startRecordingEvents(std::string fileName) {
         if (m_recordingEvents) {
             return false;

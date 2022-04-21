@@ -29,6 +29,8 @@ std::shared_ptr<Mesh> Suzanne; // Monkey object
 
 // Testing harness
 bool captureNextFrame = false;
+bool recordingEvents = false;
+bool playingEvents = false;
 
 // Mouse callback state
 bool mouseDown = false;
@@ -43,10 +45,17 @@ void mouseEvent(SDL_Event& event);
 
 // Main function ===============================================================
 
-int main() {
+int main(int argc, char *argv[]) {
 
-	// Define and initialize Graphics renderer (needs to be done first)
+    // Set up recording and playback for Testing
+    if (!renderer.parseCommandLine("SRE-Example-18_FPS-camera",
+                                   recordingEvents, playingEvents, argc, argv)) {
+        exit(EXIT_FAILURE);
+    }
+
+	// Initialize Graphics renderer (needs to be done before graphics used)
     renderer.init();
+    
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
     renderer.frameRender = frameRender;

@@ -140,6 +140,10 @@ public:
     void SetAppUpdated(bool appUpdated);                        // Let SRE know that the application has updated so that it will force rendering when
                                                                 // using the flag MiniumalRendering. This will be set to "false" after the next render operation.
 
+    bool parseCommandLine(std::string programName,              // Parse the command line (arguments passed to the executable program) and return whether 
+                          bool& recordEvents, bool& playEvents, // recording or playing back. Setup the recording and playback infrastructure accordingly.
+                          int argc, char* argv[]);
+
     bool startRecordingEvents(std::string fileName);            // Start recording SDL events (e.g. keyboard, mouse, mouse motion, etc.). This is useful
                                                                 // for testing. Recommend only allowing recording right after application has started (e.g.
                                                                 // start recording only based on a flag passed as an argument to the application) because
