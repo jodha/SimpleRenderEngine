@@ -111,6 +111,8 @@ namespace sre {
         void blit(std::shared_ptr<Material> material,                   // Render material to screen
                   glm::mat4 transformation = glm::mat4(1.0f));
 
+        glm::vec2 frameSize();                                          // Return the frame/window size for this RenderPass 
+
         std::vector<Color> readPixels(unsigned int x,                   // Reads pixel(s) from the current framebuffer and returns an array of color values
                                           unsigned int y,               // The defined rectangle must be within the size of the current framebuffer
                                           unsigned int width = 1,       // This function must be called after finish has been explicit called on the renderPass

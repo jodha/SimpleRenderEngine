@@ -15,8 +15,11 @@
 #include <sre/Log.hpp>
 #include <sre/VR.hpp>
 #include "imgui.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 #include "sre/SDLRenderer.hpp"
 #define SDL_MAIN_HANDLED
+
 
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
@@ -1091,6 +1094,38 @@ namespace sre{
             nextFrame = -99;
         }
         return nextFrame;
+    }
+
+    void SDLRenderer::captureFrameAndFinishRenderPass(RenderPass * renderPass) {
+        renderPass->finish();
+        int i = m_image.size();
+        m_imageDimensions.push_back(renderPass->frameSize());
+        m_image.push_back(renderPass->readRawPixels(0, 0, m_imageDimensions[i].x,
+                                                        m_imageDimensions[i].y));
+    }
+
+    void SDLRenderer::writeCapturedImages() {
+        if (m_writingImages) {
+            return;
+        }
+        m_writingImages = true;
+        stbi_flip_vertically_on_write(true);
+   
+        assert(m_image.size() == m_imageDimensions.size());
+        for (int i = 0; i < m_image.size(); i++) {
+            // Keep ImGui responsive during write (process events & draw)
+            SDLRenderer::instance->drawFrame();
+
+            std::stringstream fileName;
+            fileName << m_imageFileName << i << ".png";
+
+            int stride = Color::numChannels() * m_imageDimensions[i].x;
+            stbi_write_png(fileName.str().c_str(),
+                            m_imageDimensions[i].x, m_imageDimensions[i].y,
+                            Color::numChannels(), m_image[i].data(), stride);
+        }
+
+        m_writingImages = false;
     }
 
     // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of

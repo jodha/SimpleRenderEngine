@@ -6,8 +6,6 @@
 #include "sre/SDLRenderer.hpp"
 #include <sre/Skybox.hpp>
 #include <sre/ModelImporter.hpp>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
 
 using namespace sre;
 using namespace glm;
@@ -20,14 +18,17 @@ WorldLights worldLights;
 std::shared_ptr<Skybox> skybox;
 float elapsedTime = 0.0f;
 float worldUnit = 1.0; // Used as a unit of measure to scale all objects
-int frame = 0;
 
 // Objects
+SDLRenderer renderer;
 std::shared_ptr<Mesh> gridPlaneTop;
 std::shared_ptr<Mesh> gridPlaneBottom;
 std::shared_ptr<Mesh> torus;
 std::shared_ptr<Mesh> sphere;
 std::shared_ptr<Mesh> Suzanne; // Monkey object
+
+// Testing harness
+bool captureNextFrame = false;
 
 // Mouse callback state
 bool mouseDown = false;
@@ -45,7 +46,6 @@ void mouseEvent(SDL_Event& event);
 int main() {
 
 	// Define and initialize Graphics renderer (needs to be done first)
-    SDLRenderer renderer;
     renderer.init();
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
@@ -153,6 +153,10 @@ int main() {
 	// Start processing mouse and keyboard events (continue until user quits)
     renderer.startEventLoop();
 
+    // Write captured images for Testing
+    std::cout << "Writing images to filesystem..." << std::endl;
+    renderer.writeCapturedImages();
+
 	// Exit the program
     return 0;
 }
@@ -183,22 +187,10 @@ void frameRender() {
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
 
-    frame++;
-    glm::ivec2 windowSize;
-    stbi_flip_vertically_on_write(true);
-    if (frame % 50 == 0) {
-        renderPass.finish();
-        windowSize = Renderer::instance->getDrawableSize();
-
-        std::vector<glm::u8vec4> image;
-        image = renderPass.readRawPixels(0, 0, windowSize.x, windowSize.y);
-
-        std::stringstream file;
-        file << "Test" << frame << ".png";
-
-        int stride = Color::numChannels() * windowSize.x; 
-        stbi_write_png(file.str().c_str(), windowSize.x, windowSize.y,
-                                    Color::numChannels(), image.data(), stride);
+    if (captureNextFrame) {
+        // Capture image of frame for Testing
+        renderer.captureFrameAndFinishRenderPass(&renderPass);
+        captureNextFrame = false;
     }
 };
 
@@ -245,6 +237,10 @@ void keyEvent(SDL_Event& event) {
 				camera->move(distance, FPS_Camera::Direction::Down);
 			}
 		}
+        // Capture image of next frame for Testing
+        if (key == SDLK_F1 ) {
+            captureNextFrame = true;
+        }
 	}
 }
 

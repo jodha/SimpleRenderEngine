@@ -256,6 +256,14 @@ namespace sre {
         }
     }
 
+    glm::vec2 RenderPass::frameSize() {
+        if (builder.framebuffer) {
+            return builder.framebuffer->size;
+        } else {
+            return static_cast<glm::vec2>(Renderer::instance->getDrawableSize());
+        }
+    }
+
     void RenderPass::finish(){
         if (mIsFinished){
             return;
@@ -266,12 +274,7 @@ namespace sre {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        glm::vec2 windowSize;
-        if (builder.framebuffer){
-            windowSize = builder.framebuffer->size;
-        } else {
-            windowSize = static_cast<glm::vec2>(Renderer::instance->getDrawableSize());
-        }
+        glm::vec2 windowSize = frameSize();
         viewportOffset = static_cast<glm::uvec2>(builder.camera.viewportOffset * windowSize);
         viewportSize = static_cast<glm::uvec2>(windowSize * builder.camera.viewportSize);
         glEnable(GL_SCISSOR_TEST);
