@@ -20,18 +20,11 @@ float elapsedTime = 0.0f;
 float worldUnit = 1.0; // Used as a unit of measure to scale all objects
 
 // Objects
-SDLRenderer renderer;
 std::shared_ptr<Mesh> gridPlaneTop;
 std::shared_ptr<Mesh> gridPlaneBottom;
 std::shared_ptr<Mesh> torus;
 std::shared_ptr<Mesh> sphere;
 std::shared_ptr<Mesh> Suzanne; // Monkey object
-
-// Testing harness
-std::string eventsFileName;
-bool recordingEvents = false;
-bool playingEvents = false;
-bool captureNextFrame = false;
 
 // Mouse callback state
 bool mouseDown = false;
@@ -46,19 +39,11 @@ void mouseEvent(SDL_Event& event);
 
 // Main function ===============================================================
 
-int main(int argc, char *argv[]) {
+int main() {
 
-    // Set up recording and playback for Testing
-    if (!renderer.parseMainArgumentsForEventProcessing(
-                                   "SRE-Example-18_FPS-camera",
-                                   recordingEvents, playingEvents,
-                                   eventsFileName, argc, argv)) {
-        exit(EXIT_FAILURE);
-    }
-
-	// Initialize Graphics renderer (needs to be done before graphics used)
-    renderer.init().withMinimalRendering(true);
-    
+	// Define and initialize Graphics renderer (needs to be done first)
+    SDLRenderer renderer;
+    renderer.init();
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
     renderer.frameRender = frameRender;
@@ -165,10 +150,6 @@ int main(int argc, char *argv[]) {
 	// Start processing mouse and keyboard events (continue until user quits)
     renderer.startEventLoop();
 
-    // Write captured images for Testing
-    std::cout << "Writing images to filesystem..." << std::endl;
-    renderer.writeCapturedImages();
-
 	// Exit the program
     return 0;
 }
@@ -179,8 +160,7 @@ int main(int argc, char *argv[]) {
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->getLocation();	
-	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f; // Comment out for testing
-	//sphereLocation.z = 0.0f; // Fix for testing (location depends on # of frames)
+	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };
 
@@ -199,16 +179,6 @@ void frameRender() {
 	torus->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
-
-    // Manage event recording and playing for Testing
-    renderer.manageEventRecordingAndPlaying(recordingEvents, playingEvents,
-                                            eventsFileName, false);
-
-    if (captureNextFrame) {
-        // Capture image of frame for Testing
-        renderer.captureFrameAndFinishRenderPass(&renderPass);
-        captureNextFrame = false;
-    }
 };
 
 // Process keyboard events
@@ -254,10 +224,6 @@ void keyEvent(SDL_Event& event) {
 				camera->move(distance, FPS_Camera::Direction::Down);
 			}
 		}
-        // Capture image of next frame for Testing
-        if (key == SDLK_F1 ) {
-            captureNextFrame = true;
-        }
 	}
 }
 
