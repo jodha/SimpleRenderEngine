@@ -16,6 +16,7 @@
 #include <sre/Log.hpp>
 #include <sre/VR.hpp>
 #include "imgui.h"
+#include <sre/imgui_addon.hpp>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 #include "sre/SDLRenderer.hpp"
@@ -534,11 +535,12 @@ namespace sre{
         this->appUpdated = appUpdated;
     }
 
-    bool SDLRenderer::parseCommandLine(std::string programName,
+    bool SDLRenderer::parseMainArgumentsForEventProcessing(
+                          std::string programName,
                           bool& recordEvents, bool& playEvents,
+                          std::string& eventsFileName,
                           int argc, char* argv[]) {
         int success = true;
-        std::string eventsFile;
 
         // Get and process arguments passed in to the executable
 
@@ -553,7 +555,7 @@ namespace sre{
             case 'r':
                 if (!playEvents) {
                     // optarg contains the argument for the option
-                    eventsFile = optarg;
+                    eventsFileName = optarg;
                     recordEvents = true;
                 } else {
                     std::cout << "Error: cannot simultaneously playback and"
@@ -564,7 +566,7 @@ namespace sre{
                 break;
             case 'p':
                 if (!recordEvents) {
-                    eventsFile = optarg;
+                    eventsFileName = optarg;
                     playEvents = true;
                 } else {
                     std::cout << "Error: cannot simultaneously playback and"
@@ -598,10 +600,42 @@ namespace sre{
                 return success = false;
             }
         }
+
         return success = true;
     }
-    
-    bool SDLRenderer::startRecordingEvents(std::string fileName) {
+
+    void SDLRenderer::manageEventRecordingAndPlaying(
+                          bool& recordingEvents, bool& playingEvents,
+                          const std::string& eventsFileName,
+                          const bool& showImGuiMessages) {
+        assert(!(recordingEvents && playingEvents));
+        assert(!(m_recordingEvents && m_playingBackEvents));
+        if (!m_eventProcessingInitialized) { 
+            if (playingEvents && !m_playingBackEvents) {
+                if (!playBackRecordedEvents(eventsFileName)) {
+                    if (showImGuiMessages) {
+                        ImGui::ShowMessage("Error playing events");
+                    } else {
+                        LOG_ERROR("Error playing events");
+                    }
+                }
+            } else if (recordingEvents && !m_recordingEvents) {
+                if(!startRecordingEvents(eventsFileName)) {
+                    if (showImGuiMessages) {
+                        ImGui::ShowMessage("Error recording events");
+                    } else {
+                        LOG_ERROR("Error recording events");
+                    }
+                }
+            }
+            m_eventProcessingInitialized = true;
+        }
+        // Update calling function event processing status
+        recordingEvents = m_recordingEvents;
+        playingEvents = m_playingBackEvents;
+    }
+
+    bool SDLRenderer::startRecordingEvents(const std::string& fileName) {
         if (m_recordingEvents) {
             return false;
         }
@@ -679,8 +713,9 @@ namespace sre{
                 m_recordingStream << frameNumber << " "
                     << getMouseState(&x, &y) << " "
                     << x << " " << y << " "
-                    << "quit" << " "
-                    << "#end program"
+                    << e.quit.type << " "
+                    << e.quit.timestamp << " "
+                    << "#quit (end program)"
                     << std::endl;
                 break;
             case SDL_TEXTINPUT:
@@ -859,6 +894,8 @@ namespace sre{
         std::string textInput;
         switch (e.type) {
             case SDL_QUIT:
+                eventLine
+                    >> e.quit.timestamp;
                 break;
             case SDL_TEXTINPUT:
                 eventLine
@@ -1010,7 +1047,7 @@ namespace sre{
         return m_recordingEvents;
     }
 
-    bool SDLRenderer::playBackRecordedEvents(std::string fileName) {
+    bool SDLRenderer::playBackRecordedEvents(const std::string& fileName) {
         // Read recorded events and write out events from playback
         bool success = true;
         if (m_recordingEvents) {
@@ -1023,7 +1060,7 @@ namespace sre{
         return success;
     }
 
-    bool SDLRenderer::readRecordedEvents(std::string fileName) {
+    bool SDLRenderer::readRecordedEvents(const std::string& fileName) {
         bool success = true;
         if (m_recordingEvents) {
             LOG_ERROR("Cannot read a recording while recording events");

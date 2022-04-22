@@ -28,9 +28,10 @@ std::shared_ptr<Mesh> sphere;
 std::shared_ptr<Mesh> Suzanne; // Monkey object
 
 // Testing harness
-bool captureNextFrame = false;
+std::string eventsFileName;
 bool recordingEvents = false;
 bool playingEvents = false;
+bool captureNextFrame = false;
 
 // Mouse callback state
 bool mouseDown = false;
@@ -48,13 +49,15 @@ void mouseEvent(SDL_Event& event);
 int main(int argc, char *argv[]) {
 
     // Set up recording and playback for Testing
-    if (!renderer.parseCommandLine("SRE-Example-18_FPS-camera",
-                                   recordingEvents, playingEvents, argc, argv)) {
+    if (!renderer.parseMainArgumentsForEventProcessing(
+                                   "SRE-Example-18_FPS-camera",
+                                   recordingEvents, playingEvents,
+                                   eventsFileName, argc, argv)) {
         exit(EXIT_FAILURE);
     }
 
 	// Initialize Graphics renderer (needs to be done before graphics used)
-    renderer.init();
+    renderer.init().withMinimalRendering(true);
     
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
@@ -176,7 +179,8 @@ int main(int argc, char *argv[]) {
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->getLocation();	
-	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
+	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f; // Comment out for testing
+	//sphereLocation.z = 0.0f; // Fix for testing (location depends on # of frames)
 	sphere->setLocation(sphereLocation);
 };
 
@@ -195,6 +199,10 @@ void frameRender() {
 	torus->draw(renderPass);
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
+
+    // Manage event recording and playing for Testing
+    renderer.manageEventRecordingAndPlaying(recordingEvents, playingEvents,
+                                            eventsFileName, false);
 
     if (captureNextFrame) {
         // Capture image of frame for Testing
