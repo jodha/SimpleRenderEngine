@@ -57,7 +57,8 @@ int main(int argc, char *argv[]) {
     }
 
 	// Initialize Graphics renderer (needs to be done before graphics used)
-    renderer.init().withMinimalRendering(true);
+    renderer.init().withMinimalRendering(true)
+                   .withSdlWindowFlags(SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
     
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
@@ -72,12 +73,6 @@ int main(int argc, char *argv[]) {
 	float speed = 2.0f * worldUnit; // 2 worldUnits / second
 	float rotationSpeed = 5.0f; // 5 degrees / second
 	float fieldOfView= 45.0f;
-//	camera->init(position,direction,worldUp, speed,rotationSpeed,fieldOfView);
-//	camera->init({0.0f, 0.0f, 10.0f * worldUnit}, // position
-//				{0.0f, 0.0f, -1.0f}, // direction
-//				{0.0f, 1.0f,  0.0f}, // worldUp
-//				2.0f * worldUnit, 5.0f, // speed, rotationSpeed
-//				45.0f)  // fieldOfView
 	camera = FPS_Camera::create()
 				.withPosition(position)
 				.withDirection(direction)
@@ -152,15 +147,11 @@ int main(int argc, char *argv[]) {
     auto SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
     SuzanneMaterial->setColor({1.0f, 0.7f, 0.2f, 1.0f});
     SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
-	Suzanne = sre::ModelImporter::importObj("examples_data/", "suzanne.obj");
+	Suzanne = sre::ModelImporter::importObj("../", "suzanne.obj");
 	Suzanne->setLocation({20.0f * worldUnit, 0.0f, 0.0f});
 	Suzanne->setRotation({0.0f, -45.0f, 0.0f});
 	Suzanne->setScaling(worldUnit);
 	Suzanne->setMaterial(SuzanneMaterial);
-
-	// Capture the mouse (mouse won't be visible)
-	//SDL_SetRelativeMouseMode(SDL_TRUE);
-	//SDL_CaptureMouse(SDL_TRUE);
 
 	// Start processing mouse and keyboard events (continue until user quits)
     renderer.startEventLoop();
@@ -179,8 +170,7 @@ int main(int argc, char *argv[]) {
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->getLocation();	
-	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f; // Comment out for testing
-	//sphereLocation.z = 0.0f; // Fix for testing (location depends on # of frames)
+	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };
 
