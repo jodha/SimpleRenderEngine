@@ -1,5 +1,4 @@
 name: CMake
- 
 on:
   push:
     branches: [ master ]
@@ -26,6 +25,9 @@ jobs:
             target: Windows
 
     steps:
+
+    - name: Set XDG_RUNTIME_DIR
+      run: echo "XDG_RUNTIME_DIR=/run/user/$UID" >> $GITHUB_ENV 
 
     - name: Cache sdl2 dependencies
       if: ${{ matrix.os == 'macos-latest' }}
