@@ -56,7 +56,7 @@ bool getMaximumOpenGLSupport(int * major_, int * minor_){
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, core[i]?SDL_GL_CONTEXT_PROFILE_CORE:SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
         SDL_Window *window = SDL_CreateWindow(
                 "OpenGL Version", 0, 0, 256, 256,
-                SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+                SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIDDEN);
         if (window) {
             // Create an OpenGL context associated with the window.
             SDL_GLContext glcontext = SDL_GL_CreateContext(window);
