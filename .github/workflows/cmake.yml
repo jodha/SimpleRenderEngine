@@ -193,12 +193,12 @@ jobs:
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more
       # detail
-      run: ctest 
+      run: ctest --output-on-failure
 
     - name: Test Windows
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
         cd ../build 
-        ctest 
+        ctest --output-on-failure
 
