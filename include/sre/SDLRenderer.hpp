@@ -207,6 +207,7 @@ private:
     bool imGuiWantCaptureMousePrevious = true;
 
     // Recording and playback of frames and events
+    bool isWindowHidden = false;
     void recordFrame();
     void recordEvent(const SDL_Event& e);
     SDL_Event getNextRecordedEvent(bool& endOfFile);
