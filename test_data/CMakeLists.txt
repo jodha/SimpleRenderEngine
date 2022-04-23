@@ -4,7 +4,6 @@
 
 find_program (BASH_PROGRAM bash)
 if (BASH_PROGRAM)
-#   add_test (mytest ${BASH_PROGRAM} ${PROJECT_BINARY_DIR}/test_data/FPS-camera/run-test.sh)
     add_test(NAME  mytest
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_data/FPS-camera/
              COMMAND run-test.sh
