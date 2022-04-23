@@ -1053,6 +1053,11 @@ namespace sre{
         if (m_recordingEvents) {
             return success = false;
         }
+        if (!window){
+            LOG_INFO("SDLRenderer::init() not called");
+            return success = false;
+        }
+        isWindowHidden = (SDL_GetWindowFlags(window) & SDL_WINDOW_HIDDEN);
         if (!readRecordedEvents(fileName)) {
             return success = false;
         }
@@ -1160,7 +1165,9 @@ namespace sre{
         m_playbackFrame = nextFrame;
         while (nextFrame == m_playbackFrame && !endOfFile) {
             event = getNextRecordedEvent(endOfFile);
-            SDL_WarpMouseInWindow(window, m_playbackMouse_x, m_playbackMouse_y);
+            if (!isWindowHidden) {
+                SDL_WarpMouseInWindow(window, m_playbackMouse_x, m_playbackMouse_y);
+            }
             if (!endOfFile && SDL_PushEvent(&event) != 1) {
                 LOG_ERROR("Error pushing event to queue");
                 LOG_ERROR(SDL_GetError());
