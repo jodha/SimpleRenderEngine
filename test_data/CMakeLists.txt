@@ -4,10 +4,10 @@
 
 find_program (BASH_PROGRAM bash)
 if (BASH_PROGRAM)
-#    add_test(NAME  mytest
-#             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_data/FPS-camera/
-#             COMMAND run-test.sh
-#             )
+    add_test(NAME  mytest
+             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_data/FPS-camera/
+             COMMAND run-test.sh
+             )
 endif (BASH_PROGRAM)
 
 file(COPY .  DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
