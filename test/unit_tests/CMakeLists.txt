@@ -13,7 +13,7 @@ foreach(case_file ${test_cases})
                           SRE ${EXTRA_LIBS} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${OPENVR_LIB}
                           ${LINK_LIBS} gtest_main pthread  
                          )
-    add_test(NAME ${case_name}
+    add_test(NAME unit:${case_name}
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/unit_tests/
              COMMAND ${case_name}
              )
