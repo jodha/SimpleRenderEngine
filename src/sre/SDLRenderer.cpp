@@ -1053,11 +1053,6 @@ namespace sre{
         if (m_recordingEvents) {
             return success = false;
         }
-        if (!window){
-            LOG_INFO("SDLRenderer::init() not called");
-            return success = false;
-        }
-        isWindowHidden = (SDL_GetWindowFlags(window) & SDL_WINDOW_HIDDEN);
         if (!readRecordedEvents(fileName)) {
             return success = false;
         }
@@ -1351,6 +1346,7 @@ namespace sre{
             sdlRenderer->r = new Renderer(sdlRenderer->window, vsync, maxSceneLights);
 
             sdlRenderer->SetMinimalRendering(minimalRendering);
+            sdlRenderer->isWindowHidden = (SDL_GetWindowFlags(sdlRenderer->window) & SDL_WINDOW_HIDDEN);
 
 #ifdef SRE_DEBUG_CONTEXT
             if (glDebugMessageCallback) {
