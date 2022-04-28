@@ -697,9 +697,10 @@ namespace sre{
         //   typedef int int32_t;
         // To properly print an unsigned char that is used to store bits (e.g.
         // that is not being used to store characters), you need to "promote"
-        // the value using the bit operation "+" (needed for all 'Uint8'
-        // variables in the event structs). An alternative would be to print in
-        // hexadecimal format (example below). See discussion in StackOverflow:
+        // the value using the bit operation "+" (needed for all 'Uint8', i.e.
+        // unsigned, 8-bit integer) variables in the event structs). An
+        // alternative would be to print in hexadecimal format (example below).
+        // See discussion in StackOverflow:
         // [https://]
         // stackoverflow.com/questions/15585267/cout-not-printing-unsigned-char
         // This is the example for printing in hexadecimal format:
@@ -707,6 +708,19 @@ namespace sre{
         //      << std::internal      // fill between the prefix and the number
         //      << std::setfill('0'); // fill with 0s
         // std::cout << std::hex << std::setw(4) << value
+        //
+        // SDL provides the SDL_GetMouseState function that a user can call at
+        // any time -- the information to support this call during playback is
+        // stored right after the frame number for all events. Note that
+        // sometimes the values returned by SDL_GetMouseState are different
+        // than what is provided by the various mouse events. Storing the mouse
+        // state separately allows playback to provide exactly what the code
+        // experienced during recording of events.
+        //
+        // For complete consistency, the m_playbackKeymodState should probably
+        // be stored seperately per frame, like m_playbackMouseState. However,
+        // The KeyModState is unlikely to be changed without a call to a key
+        // event, so leave this as written and tested.
         int x, y;
         switch (e.type) {
             case SDL_QUIT:
@@ -878,6 +892,7 @@ namespace sre{
             LOG_ERROR("Error getting frame number from m_playbackStream");
             return e;
         }
+        // See comments about SDL_GetMouseState in SDLRenderer::recordEvent
         eventLine >> m_playbackMouseState
                   >> m_playbackMouse_x >> m_playbackMouse_y;
         if (!eventLine) {
@@ -932,6 +947,8 @@ namespace sre{
                 e.key.keysym.scancode = static_cast<SDL_Scancode>(scancode);
                 e.key.keysym.sym = static_cast<SDL_Keycode>(sym);
                 e.key.keysym.mod = static_cast<Uint16>(mod);
+                // Should m_playbackKeymodState be stored seperately per frame,
+                // like m_playbackMouseState?
                 m_playbackKeymodState = static_cast<SDL_Keymod>(modState);
                 break;
             case SDL_MOUSEMOTION:
@@ -1236,7 +1253,7 @@ namespace sre{
     }
 
     // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of
-    // recorded events
+    // recorded events. See comments about SDL_GetMouseState in ::recordEvent
     Uint32 SDLRenderer::getMouseState(int* x, int* y) {
         Uint32 mouseState;
         if (m_playingBackEvents) {
@@ -1250,7 +1267,8 @@ namespace sre{
     }
 
     // Intercept calls to SDL_GetModState for Dear ImGui during playback of
-    // recorded events
+    // recorded events. Should m_playbackKeymodState be stored seperately per
+    // frame in the recorded events log, like m_playbackMouseState?
     SDL_Keymod SDLRenderer::getKeymodState() {
         SDL_Keymod keymodState;
         if (m_playingBackEvents) {
