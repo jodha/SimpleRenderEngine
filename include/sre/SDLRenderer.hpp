@@ -144,8 +144,9 @@ public:
                           std::string programName,              // recording or playing back. Setup the recording and playback infrastructure accordingly.
                           bool& recordEvents, bool& playEvents,
                           std::string& eventsFileName,
+                          uint32_t& sdlWindowFlags,             // Adds the SDL_WINDOW_HIDDEN flag to the Flags set in sdlWindowFlags
                           int argc, char* argv[]);
-    void manageEventRecordingAndPlaying(bool& recordingEvents, // A helper function to manage the event recording and playback functionality based on the
+    void manageEventRecordingAndPlaying(bool& recordingEvents,  // A helper function to manage the event recording and playback functionality based on the
                           bool& playingEvents,                  // parameters given. This function is intended to be called from the render loop and will
                           const std::string& eventsFileName,    // display ImGui error messages if the 'showImGuiMessages' flag is true.
                           const bool& showImGuiMessages);

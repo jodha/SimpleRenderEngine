@@ -539,6 +539,7 @@ namespace sre{
                           std::string programName,
                           bool& recordEvents, bool& playEvents,
                           std::string& eventsFileName,
+                          uint32_t& sdlWindowFlags,
                           int argc, char* argv[]) {
         int success = true;
 
@@ -550,7 +551,8 @@ namespace sre{
         //   option and missing argument cases
     
         int option;
-        while(argc != 1 && (option = getopt(argc, argv, ":hr:p:")) != -1) {
+        bool isHidden;
+        while(argc != 1 && (option = getopt(argc, argv, ":hr:p:c")) != -1) {
             switch(option) {
             case 'r':
                 if (!playEvents) {
@@ -575,13 +577,24 @@ namespace sre{
                     return success = false;
                 }
                 break;
+            case 'c':
+                if (playEvents) {
+                    isHidden = true;
+                } else {
+                    std::cout << "Error: cannot select the -c option without"
+                              << " first selecting the -p option." << std::endl;
+                    return success = false;
+                }
+                break;
             case 'h':   // help
-                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                printf("usage: %s [ -r filename <or> -p filename ][-c]\n",
                        programName.c_str());
                 printf("where\n");
                 printf("    r: (-r filename) record events to filename\n");
                 printf("or\n");
                 printf("    p: (-p filename) playback events from filename\n");
+                printf("-c indicates run in console with hidden window,");
+                printf("which can only be used together with the -p option.");
                 return success = false;
             case ':':
                 // missing option argument
@@ -595,10 +608,15 @@ namespace sre{
             case '?':   // getopt default invalid option
             default:
                 fprintf(stderr, "Illegal option '-%c\n", optopt);
-                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                printf("usage: %s [ -r filename <or> -p filename ][-c]\n",
                        programName.c_str());
                 return success = false;
             }
+        }
+        if (isHidden) {
+            sdlWindowFlags = sdlWindowFlags | SDL_WINDOW_HIDDEN;
+        } else {
+            sdlWindowFlags = sdlWindowFlags | SDL_WINDOW_RESIZABLE;
         }
 
         return success = true;
@@ -1236,6 +1254,9 @@ namespace sre{
         stbi_flip_vertically_on_write(true);
    
         assert(m_image.size() == m_imageDimensions.size());
+        if (m_image.size() > 0) {
+            std::cout << "Writing images to filesystem..." << std::endl;
+        }
         for (int i = 0; i < m_image.size(); i++) {
             // Keep ImGui responsive during write (process events & draw)
             SDLRenderer::instance->drawFrame();

@@ -49,16 +49,16 @@ void mouseEvent(SDL_Event& event);
 int main(int argc, char *argv[]) {
 
     // Set up recording and playback for Testing
+    uint32_t sdlWindowFlags = SDL_WINDOW_OPENGL;
     if (!renderer.parseMainArgumentsForEventProcessing(
-                                   "SRE-Example-18_FPS-camera",
-                                   recordingEvents, playingEvents,
-                                   eventsFileName, argc, argv)) {
+                               "SRE-Example-18_FPS-camera",
+                               recordingEvents, playingEvents,
+                               eventsFileName, sdlWindowFlags, argc, argv)) {
         exit(EXIT_FAILURE);
     }
 
 	// Initialize Graphics renderer (needs to be done before graphics used)
-    renderer.init().withMinimalRendering(true)
-                   .withSdlWindowFlags(SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    renderer.init().withSdlWindowFlags(sdlWindowFlags);
     
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
@@ -157,7 +157,6 @@ int main(int argc, char *argv[]) {
     renderer.startEventLoop();
 
     // Write captured images for Testing
-    std::cout << "Writing images to filesystem..." << std::endl;
     renderer.writeCapturedImages();
 
 	// Exit the program
