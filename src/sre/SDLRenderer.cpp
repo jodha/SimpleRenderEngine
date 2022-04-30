@@ -324,7 +324,9 @@ namespace sre{
         running = false;
         runningEventSubLoop = false;
         if (m_recordingEvents) {
-            stopRecordingEvents();
+            std::string errorMessage;
+            stopRecordingEvents(errorMessage);
+            LOG_ERROR(errorMessage.c_str());
         }
     }
 
@@ -537,10 +539,10 @@ namespace sre{
 
     bool SDLRenderer::parseMainArgumentsForEventProcessing(
                           std::string programName,
+                          int argc, char* argv[],
                           bool& recordEvents, bool& playEvents,
                           std::string& eventsFileName,
-                          uint32_t& sdlWindowFlags,
-                          int argc, char* argv[]) {
+                          uint32_t& sdlWindowFlags) {
         int success = true;
 
         // Get and process arguments passed in to the executable
@@ -622,39 +624,32 @@ namespace sre{
         return success = true;
     }
 
-    void SDLRenderer::manageEventRecordingAndPlaying(
-                          bool& recordingEvents, bool& playingEvents,
-                          const std::string& eventsFileName,
-                          const bool& showImGuiMessages) {
+    bool SDLRenderer::initializeEventRecorder(
+                                     bool& recordingEvents, bool& playingEvents,
+                                     const std::string& eventsFileName,
+                                     std::string& errorMessage) {
+        bool success;
         assert(!(recordingEvents && playingEvents));
         assert(!(m_recordingEvents && m_playingBackEvents));
-        if (!m_eventProcessingInitialized) { 
-            if (playingEvents && !m_playingBackEvents) {
-                if (!playBackRecordedEvents(eventsFileName)) {
-                    if (showImGuiMessages) {
-                        ImGui::ShowMessage("Error playing events");
-                    } else {
-                        LOG_ERROR("Error playing events");
-                    }
-                }
-            } else if (recordingEvents && !m_recordingEvents) {
-                if(!startRecordingEvents(eventsFileName)) {
-                    if (showImGuiMessages) {
-                        ImGui::ShowMessage("Error recording events");
-                    } else {
-                        LOG_ERROR("Error recording events");
-                    }
-                }
+        if (playingEvents && !m_playingBackEvents) {
+            if (!startPlayingEvents(eventsFileName, errorMessage)) {
+                return success = false;
             }
-            m_eventProcessingInitialized = true;
+        } else if (recordingEvents && !m_recordingEvents) {
+            if(!startRecordingEvents(eventsFileName, errorMessage)) {
+                return success = false;
+            }
         }
         // Update calling function event processing status
         recordingEvents = m_recordingEvents;
         playingEvents = m_playingBackEvents;
+        return success = true;
     }
 
-    bool SDLRenderer::startRecordingEvents(const std::string& fileName) {
+    bool SDLRenderer::startRecordingEvents(const std::string& fileName,
+                                           std::string& errorMessage) {
         if (m_recordingEvents) {
+            errorMessage = "Attempted to record events while already recording";
             return false;
         }
         m_recordingEvents = true;
@@ -1057,9 +1052,10 @@ namespace sre{
         m_pauseRecordingOfTextEvents = pause;
     }
 
-    bool SDLRenderer::stopRecordingEvents() {
+    bool SDLRenderer::stopRecordingEvents(std::string& errorMessage) {
         bool success = true;
         if (!m_recordingEvents) {
+            errorMessage = "Not recording, but stopRecordingEvents called";
             return success = false;
         }
         std::ofstream outFile(m_recordingFileName, std::ios::out);
@@ -1069,9 +1065,9 @@ namespace sre{
             std::stringstream().swap(m_recordingStream);
         } else {
             std::stringstream errorStream;
-            errorStream << "File " << m_recordingFileName
-                << " could not be opened." << std::endl;
-            LOG_ERROR(errorStream.str().c_str());
+            errorStream << "File '" << m_recordingFileName
+                << "' could not be opened." << std::endl;
+            errorMessage = errorStream.str();
             success = false;
         }
         m_recordingEvents = false;
@@ -1082,23 +1078,26 @@ namespace sre{
         return m_recordingEvents;
     }
 
-    bool SDLRenderer::playBackRecordedEvents(const std::string& fileName) {
+    bool SDLRenderer::startPlayingEvents(const std::string& fileName,
+                                         std::string& errorMessage) {
         // Read recorded events and write out events from playback
         bool success = true;
         if (m_recordingEvents) {
+            errorMessage = "Attempted to play events while recording events";
             return success = false;
         }
-        if (!readRecordedEvents(fileName)) {
+        if (!readRecordedEvents(fileName, errorMessage)) {
             return success = false;
         }
         m_playingBackEvents = true;
         return success;
     }
 
-    bool SDLRenderer::readRecordedEvents(const std::string& fileName) {
+    bool SDLRenderer::readRecordedEvents(const std::string& fileName,
+                                         std::string& errorMessage) {
         bool success = true;
         if (m_recordingEvents) {
-            LOG_ERROR("Cannot read a recording while recording events");
+            errorMessage = "Cannot read a recording while recording events";
             return success = false;
         }
         std::ifstream inFile(fileName, std::ios::in);
@@ -1119,19 +1118,20 @@ namespace sre{
             if (!inFile || !fileLine) {
                 if (inFile.eof()) {
                     endOfFile = true;
+                    errorMessage = "Events file does not contain any events";
                 } else {
-                    LOG_ERROR("Error getting line from inFile");
+                    errorMessage = "Error reading first line from events file";
                 }
                 return success = false;
             }
             fileLine >> imGuiSize;
             if (!fileLine) {
-                LOG_ERROR("Error getting imgui.ini file size from inFile");
+                errorMessage = "Error getting imgui.ini file size from events file";
                 return success = false;
             }
             std::getline(inFile, fileLineString);
             if (!inFile || fileLineString[0] != '#') {
-                LOG_ERROR("Expected '#' after reading imgui.ini file size");
+                errorMessage = "Expected '#' after reading imgui.ini file size from events file";
                 return success = false;
             }
             // Read the imgui.ini character stream
@@ -1141,26 +1141,20 @@ namespace sre{
                 if (inFile.get(c)) {
                     imGuiStream << c;
                 } else {
-                    LOG_ERROR("Error reading imgui.ini file from inFile");
+                    errorMessage = "Error reading imgui.ini file from events file";
                     return success = false;
                 }
             }
             // Load the imgui.ini character stream into ImGui
             ImGui::LoadIniSettingsFromMemory(imGuiStream.str().c_str(), imGuiSize);
-            // Need to make a = nextCharPeek() function to return next char
+
+            // Should make a `nextCharPeek()` function to return next char
             // but put it back. If it is a comment, then read the line and
-            // discard it. This will enable getting rid of the ugly
-            // while (commentedLine) code, when it may not be commented
-            // when it starts. This will also enable being able to put a
-            // comment anywhere in the code and ignore it. Maybe make a
-            // DiscardCommentedLines() function?
-/*            commentedLine = true;
-            while (commentedLine) {
-                std::getline(inFile, fileLineString);
-                if (!inFile || fileLineString[0] != '#') {
-                    commentedLine = false;
-                }
-            }*/
+            // discard it. This could be called within the while loop below, and
+            // will enable getting rid of the `while (commentedLine)` loop near
+            // the top of the function. This will also enable being able to put
+            // a comment anywhere in the code.
+
             // Read the rest of file into the 'm_playbackStream' member variable
             std::stringstream().swap(m_playbackStream);
             while (inFile.get(c)) {
@@ -1169,9 +1163,9 @@ namespace sre{
             inFile.close();
         } else {
             std::stringstream errorStream;
-            errorStream << "File " << fileName
-                << " could not be opened." << std::endl;
-            LOG_ERROR(errorStream.str().c_str());
+            errorStream << "File '" << fileName
+                << "' could not be opened." << std::endl;
+            errorMessage = errorStream.str();
             success = false;
         }
         return success;

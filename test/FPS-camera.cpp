@@ -48,17 +48,27 @@ void mouseEvent(SDL_Event& event);
 
 int main(int argc, char *argv[]) {
 
-    // Set up recording and playback for Testing
+    // Set up event recording and playing for Testing
     uint32_t sdlWindowFlags = SDL_WINDOW_OPENGL;
     if (!renderer.parseMainArgumentsForEventProcessing(
-                               "SRE-Example-18_FPS-camera",
+                               "SRE-Test-FPS-camera", argc, argv,
                                recordingEvents, playingEvents,
-                               eventsFileName, sdlWindowFlags, argc, argv)) {
+                               eventsFileName, sdlWindowFlags)) {
         exit(EXIT_FAILURE);
     }
 
 	// Initialize Graphics renderer (needs to be done before graphics used)
     renderer.init().withSdlWindowFlags(sdlWindowFlags);
+    
+    // Initialize event recording and playing for Testing
+    std::string errorMessage;
+    if (!renderer.initializeEventRecorder(recordingEvents, playingEvents,
+                                          eventsFileName, errorMessage)) {
+        LOG_ERROR(errorMessage.c_str());
+        if (sdlWindowFlags & SDL_WINDOW_HIDDEN) {
+            exit(EXIT_FAILURE);
+        }
+    }
     
 	// Assign SDLRenderer 'callback' functions to functions implemented below
     renderer.frameUpdate = frameUpdate;
@@ -189,10 +199,6 @@ void frameRender() {
 	sphere->draw(renderPass);
 	Suzanne->draw(renderPass);
 
-    // Manage event recording and playing for Testing
-    renderer.manageEventRecordingAndPlaying(recordingEvents, playingEvents,
-                                            eventsFileName, false);
-
     if (captureNextFrame) {
         // Capture image of frame for Testing
         renderer.captureFrameAndFinishRenderPass(&renderPass);
@@ -244,7 +250,7 @@ void keyEvent(SDL_Event& event) {
 			}
 		}
         // Capture image of next frame for Testing
-        if (key == SDLK_F1 ) {
+        if (key == SDLK_F1) {
             captureNextFrame = true;
         }
 	}
