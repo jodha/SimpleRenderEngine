@@ -325,8 +325,9 @@ namespace sre{
         runningEventSubLoop = false;
         if (m_recordingEvents) {
             std::string errorMessage;
-            stopRecordingEvents(errorMessage);
-            LOG_ERROR(errorMessage.c_str());
+            if (!stopRecordingEvents(errorMessage)) {
+                LOG_ERROR(errorMessage.c_str());
+            }
         }
     }
 
@@ -666,11 +667,8 @@ namespace sre{
         m_recordingStream << "# imgui.ini file:" << std::endl;
         m_recordingStream << imGuiStr;
         m_recordingStream << "# Recorded SDL events:" << std::endl
-            // Note: the format deviates slightly for e.key, where we append the
-            //       value for the SDL_GetModState function, which imgui needs
-            // Note: Some frames only have 'frame_number mouse_state mx my'
-            << "# Format: frame_number mouse_state mx my event_data #comment"
-            << std::endl;
+            << "# Format: frame_number mouse_state mx my keymod_state"
+            << " event_data #comment" << std::endl;
         return true;
     }
 
@@ -679,6 +677,7 @@ namespace sre{
         m_recordingStream << frameNumber << " "
                           << getMouseState(&x, &y) << " "
                           << x << " " << y << " "
+                          << getKeymodState() << " "
                           << "#no event"
                           << std::endl;
     }
@@ -721,25 +720,22 @@ namespace sre{
         //      << std::internal      // fill between the prefix and the number
         //      << std::setfill('0'); // fill with 0s
         // std::cout << std::hex << std::setw(4) << value
-        //
-        // SDL provides the SDL_GetMouseState function that a user can call at
-        // any time -- the information to support this call during playback is
-        // stored right after the frame number for all events. Note that
-        // sometimes the values returned by SDL_GetMouseState are different
-        // than what is provided by the various mouse events. Storing the mouse
-        // state separately allows playback to provide exactly what the code
-        // experienced during recording of events.
-        //
-        // For complete consistency, the m_playbackKeymodState should probably
-        // be stored seperately per frame, like m_playbackMouseState. However,
-        // The KeyModState is unlikely to be changed without a call to a key
-        // event, so leave this as written and tested.
+
+        // SDL provides the SDL_GetMouseState and SDL_GetModState functions that
+        // a user can call at any time -- the information to support this call
+        // during playback is stored right after the frame number for all events.
+        // Note that sometimes the values returned by SDL_GetMouseState are
+        // different than what is provided by the various mouse events. Storing
+        // the mouse state separately allows playback to provide exactly what the
+        // code experienced during recording of events.
         int x, y;
+        m_recordingStream << frameNumber << " "
+            << getMouseState(&x, &y) << " "
+            << x << " " << y << " "
+            << getKeymodState() << " ";
         switch (e.type) {
             case SDL_QUIT:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.quit.type << " "
                     << e.quit.timestamp << " "
                     << "#quit (end program)"
@@ -747,9 +743,7 @@ namespace sre{
                 break;
             case SDL_TEXTINPUT:
                 if (!m_pauseRecordingOfTextEvents) {
-                    m_recordingStream << frameNumber << " "
-                        << getMouseState(&x, &y) << " "
-                        << x << " " << y << " "
+                    m_recordingStream
                         << e.text.type << " "
                         << e.text.timestamp << " "
                         << e.text.windowID << " "
@@ -761,9 +755,7 @@ namespace sre{
                 break;
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.key.type << " "
                     << e.key.timestamp << " "
                     << e.key.windowID << " "
@@ -775,16 +767,13 @@ namespace sre{
                     << e.key.keysym.scancode << " "
                     << e.key.keysym.sym << " "
                     << +e.key.keysym.mod << " "
-                    << getKeymodState() << " "
                     << "#key "
                     << (e.key.state == SDL_PRESSED ? "pressed" : "released")
                     << " '" << char(e.key.keysym.sym) << "'"
                     << std::endl;
                 break;
             case SDL_MOUSEMOTION:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.motion.type << " "
                     << e.motion.timestamp << " "
                     << e.motion.windowID << " "
@@ -801,9 +790,7 @@ namespace sre{
                 break;
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.button.type << " "
                     << e.button.timestamp << " "
                     << e.button.windowID << " "
@@ -820,9 +807,7 @@ namespace sre{
                     << std::endl;
                 break;
             case SDL_MOUSEWHEEL:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.wheel.type << " "
                     << e.wheel.timestamp << " "
                     << e.wheel.windowID << " "
@@ -839,6 +824,9 @@ namespace sre{
             case SDL_CONTROLLERDEVICEADDED:
             case SDL_CONTROLLERDEVICEREMOVED:
             case SDL_CONTROLLERDEVICEREMAPPED:
+                m_recordingStream
+                    << "#Controller event NOT RECORDED"
+                    << std::endl;
                 LOG_ERROR("Controller 'record event' called but not processed");
                 break;
             case SDL_JOYAXISMOTION:
@@ -848,14 +836,15 @@ namespace sre{
             case SDL_JOYBUTTONUP:
             case SDL_JOYDEVICEADDED:
             case SDL_JOYDEVICEREMOVED:
+                m_recordingStream
+                    << "#Joystick event NOT RECORDED"
+                    << std::endl;
                 LOG_ERROR("Joystick 'record event' called but not processed");
                 break;
             case SDL_FINGERDOWN:
             case SDL_FINGERUP:
             case SDL_FINGERMOTION:
-                m_recordingStream << frameNumber << " "
-                    << getMouseState(&x, &y) << " "
-                    << x << " " << y << " "
+                m_recordingStream
                     << e.tfinger.type << " "
                     << e.tfinger.timestamp << " "
                     << e.tfinger.touchId << " "
@@ -871,7 +860,9 @@ namespace sre{
                 break;
             default:
                 // Record all events (even empty and "non-registered" events)
-                recordFrame();
+                m_recordingStream
+                    << "#no event"
+                    << std::endl;
                 break;
         }
     }
@@ -912,6 +903,13 @@ namespace sre{
             LOG_ERROR("Error getting mouse information from m_playbackStream");
             return e;
         }
+        int keymodState;
+        eventLine >> keymodState;
+        m_playbackKeymodState = static_cast<SDL_Keymod>(keymodState);
+        if (!eventLine) {
+            LOG_ERROR("Error getting key mod state from m_playbackStream");
+            return e;
+        }
         eventLine >> e.type;
         if (!eventLine) {
             // No event associated with frame
@@ -938,8 +936,7 @@ namespace sre{
                 break;
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                int keyState, repeat, padding2, padding3;
-                int scancode, sym, mod, modState;
+                int keyState, repeat, padding2, padding3, scancode, sym, mod;
                 eventLine
                     >> e.key.timestamp
                     >> e.key.windowID
@@ -949,8 +946,7 @@ namespace sre{
                     >> padding3
                     >> scancode
                     >> sym
-                    >> mod
-                    >> modState;
+                    >> mod;
                 // stringstream will not correctly read into 8-bit integers
                 // and SDL types. Hence, read ints and cast to the variables
                 e.key.state = static_cast<Uint8>(keyState);
@@ -960,9 +956,6 @@ namespace sre{
                 e.key.keysym.scancode = static_cast<SDL_Scancode>(scancode);
                 e.key.keysym.sym = static_cast<SDL_Keycode>(sym);
                 e.key.keysym.mod = static_cast<Uint16>(mod);
-                // Should m_playbackKeymodState be stored seperately per frame,
-                // like m_playbackMouseState?
-                m_playbackKeymodState = static_cast<SDL_Keymod>(modState);
                 break;
             case SDL_MOUSEMOTION:
                 eventLine
@@ -1009,7 +1002,7 @@ namespace sre{
             case SDL_CONTROLLERDEVICEADDED:
             case SDL_CONTROLLERDEVICEREMOVED:
             case SDL_CONTROLLERDEVICEREMAPPED:
-                LOG_ERROR("Joystick event in m_playbackStream not processed");
+                LOG_ERROR("Controller event in m_playbackStream not processed");
                 break;
             case SDL_JOYAXISMOTION:
             case SDL_JOYBALLMOTION:
@@ -1042,7 +1035,7 @@ namespace sre{
         if (!eventLine) {
             // Log this error, but continue on. Because event playback is
             // intended to be a developer feature for testing, minimal time has
-            // been invested in productizing error checking for this feature
+            // been invested in productizing error checking (for event playback)
             LOG_ERROR("Error reading event from m_playbackStream");
         }
         return e;
@@ -1066,7 +1059,7 @@ namespace sre{
         } else {
             std::stringstream errorStream;
             errorStream << "File '" << m_recordingFileName
-                << "' could not be opened." << std::endl;
+                << "' could not be opened for writing." << std::endl;
             errorMessage = errorStream.str();
             success = false;
         }
@@ -1282,8 +1275,7 @@ namespace sre{
     }
 
     // Intercept calls to SDL_GetModState for Dear ImGui during playback of
-    // recorded events. Should m_playbackKeymodState be stored seperately per
-    // frame in the recorded events log, like m_playbackMouseState?
+    // recorded events. See comments about SDL_GetModState in ::recordEvent
     SDL_Keymod SDLRenderer::getKeymodState() {
         SDL_Keymod keymodState;
         if (m_playingBackEvents) {
