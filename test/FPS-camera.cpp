@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
     renderer.startEventLoop();
 
     // Write captured images for Testing
-    renderer.writeCapturedImages();
+    renderer.writeCapturedImages("Test");
 
 	// Exit the program
     return 0;

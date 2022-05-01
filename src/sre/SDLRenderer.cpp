@@ -1164,11 +1164,11 @@ namespace sre{
         return success;
     }
 
-    void SDLRenderer::setPausePlaybackOfEvents(const bool pause) {
+    void SDLRenderer::setPausePlayingEvents(const bool pause) {
         m_pausePlaybackOfEvents = pause;
     }
 
-    bool SDLRenderer::playingBackEvents() {
+    bool SDLRenderer::playingEvents() {
         return m_playingBackEvents;
     }
 
@@ -1233,7 +1233,7 @@ namespace sre{
                                                         m_imageDimensions[i].y));
     }
 
-    void SDLRenderer::writeCapturedImages() {
+    void SDLRenderer::writeCapturedImages(std::string fileName) {
         if (m_writingImages) {
             return;
         }
@@ -1248,11 +1248,11 @@ namespace sre{
             // Keep ImGui responsive during write (process events & draw)
             SDLRenderer::instance->drawFrame();
 
-            std::stringstream fileName;
-            fileName << m_imageFileName << i << ".png";
+            std::stringstream imageFileName;
+            imageFileName << fileName << i << ".png";
 
             int stride = Color::numChannels() * m_imageDimensions[i].x;
-            stbi_write_png(fileName.str().c_str(),
+            stbi_write_png(imageFileName.str().c_str(),
                             m_imageDimensions[i].x, m_imageDimensions[i].y,
                             Color::numChannels(), m_image[i].data(), stride);
         }
