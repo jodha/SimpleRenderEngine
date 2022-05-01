@@ -71,7 +71,7 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       shell: msys2 {0}
       run: |
-        pacman -S --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
+        pacman -Sy --needed base-devel mingw-w64-x86_64-toolchain  --noconfirm
         pacman -S mingw-w64-x86_64-ninja --noconfirm
         pacman -S mingw-w64-x86_64-ccache --noconfirm
 
