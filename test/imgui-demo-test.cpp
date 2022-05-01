@@ -13,7 +13,7 @@
 
 #include "sre/SDLRenderer.hpp"
 
-#include "imgui_demo.h" 
+#include "imgui_demo.cpp" 
 
 using namespace sre;
 
@@ -22,7 +22,7 @@ public:
     GUIExample() {
         r.init()
                 .withSdlInitFlags(SDL_INIT_EVERYTHING)
-                .withSdlWindowFlags(SDL_WINDOW_OPENGL);
+                .withSdlWindowFlags(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
         // connect render callback
         r.frameRender = [&]() {
