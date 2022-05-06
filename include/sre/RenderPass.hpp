@@ -115,13 +115,15 @@ namespace sre {
 
         std::vector<Color> readPixels(unsigned int x,                   // Reads pixel(s) from the current framebuffer and returns an array of color values
                                           unsigned int y,               // The defined rectangle must be within the size of the current framebuffer
-                                          unsigned int width = 1,       // This function must be called after finish has been explicit called on the renderPass
-                                          unsigned int height = 1);
+                                          unsigned int width = 1,       // This function must be called after finish has been explicitly called on the renderPass
+                                          unsigned int height = 1,      // If readFromScreen == true, then read from the screen instead of the framebuffer, which
+                                          bool readFromScreen = false); // is useful when a multipass framebuffer is attached (in this case glReadPixels won't work)
 
         std::vector<glm::u8vec4> readRawPixels(unsigned int x,          // Similar to 'readPixels' above, except this returns array of 8-bit values
                                           unsigned int y,               // (the format is RGBA per pixel: each pixel generates 4 x 8-bits = 32 bits = 4 bytes,
                                           unsigned int width = 1,       // or one item in the u8vec4 array), useful for using e.g. stbi_write to write images
-                                          unsigned int height = 1);
+                                          unsigned int height = 1,
+                                          bool readFromScreen = false);
 
         void finishGPUCommandBuffer();                                  // GPU command buffer (must be called when
                                                                         // profiling GPU time - should not be called

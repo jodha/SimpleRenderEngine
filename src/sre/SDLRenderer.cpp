@@ -653,23 +653,22 @@ namespace sre{
             errorMessage = "Attempted to record events while already recording";
             return false;
         }
+        bool success = true;
         m_recordingEvents = true;
         m_recordingFileName = fileName;
+        // Test whether file can be opened for writing
+        std::ofstream outFile(m_recordingFileName, std::ios::out);
+        if(!outFile) {
+            std::stringstream errorStream;
+            errorStream << "File '" << m_recordingFileName
+                << "' could not be opened for writing." << std::endl;
+            errorMessage = errorStream.str();
+            success = false;
+        } else {
+            outFile.close();
+        }
         std::stringstream().swap(m_recordingStream);
-        m_recordingStream << "# File containing imgui.ini file and recorded SDL"
-                        << " events for playback"
-                        << std::endl;
-        m_recordingStream << "#" << std::endl;
-        size_t imGuiSize;
-        const char * imGuiStr = ImGui::SaveIniSettingsToMemory(&imGuiSize);
-        m_recordingStream << "# imgui.ini size:" << std::endl;
-        m_recordingStream << imGuiSize << std::endl;
-        m_recordingStream << "# imgui.ini file:" << std::endl;
-        m_recordingStream << imGuiStr;
-        m_recordingStream << "# Recorded SDL events:" << std::endl
-            << "# Format: frame_number mouse_state mx my keymod_state"
-            << " event_data #comment" << std::endl;
-        return true;
+        return success;
     }
 
     void SDLRenderer::recordFrame() {
@@ -1053,7 +1052,23 @@ namespace sre{
         }
         std::ofstream outFile(m_recordingFileName, std::ios::out);
         if(outFile) {
+            // Write out file header
+            outFile << "# File containing imgui.ini file and recorded SDL"
+                    << " events for playback"
+                    << std::endl;
+            outFile << "#" << std::endl;
+            size_t imGuiSize;
+            const char * imGuiStr = ImGui::SaveIniSettingsToMemory(&imGuiSize);
+            outFile << "# imgui.ini size:" << std::endl;
+            outFile << imGuiSize << std::endl;
+            outFile << "# imgui.ini file:" << std::endl;
+            outFile << imGuiStr;
+            outFile << "# Recorded SDL events:" << std::endl
+                    << "# Format: frame_number mouse_state mx my keymod_state"
+                    << " event_data #comment" << std::endl;
+            // Write out recorded events
             outFile << m_recordingStream.str();
+            // Close file and clear stream
             outFile.close();
             std::stringstream().swap(m_recordingStream);
         } else {
@@ -1225,12 +1240,11 @@ namespace sre{
         return nextFrame;
     }
 
-    void SDLRenderer::captureFrameAndFinishRenderPass(RenderPass * renderPass) {
-        renderPass->finish();
+    void SDLRenderer::captureFrame(RenderPass * renderPass, bool captureFromScreen) {
         int i = m_image.size();
         m_imageDimensions.push_back(renderPass->frameSize());
         m_image.push_back(renderPass->readRawPixels(0, 0, m_imageDimensions[i].x,
-                                                        m_imageDimensions[i].y));
+                                       m_imageDimensions[i].y, captureFromScreen));
     }
 
     void SDLRenderer::writeCapturedImages(std::string fileName) {

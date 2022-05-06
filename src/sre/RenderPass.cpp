@@ -342,9 +342,11 @@ namespace sre {
         } 
     }
 
-    std::vector<Color> RenderPass::readPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+    std::vector<Color> RenderPass::readPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool readFromScreen) {
         assert(mIsFinished);
-        if (builder.framebuffer!=nullptr){
+        if (readFromScreen) {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        } else if (builder.framebuffer!=nullptr){
             builder.framebuffer->bind();
         }
         std::vector<Color> res(width * height);
@@ -352,16 +354,18 @@ namespace sre {
         glReadPixels(x, y, width, height, GL_RGBA, GL_FLOAT, res.data());
 
         // set default framebuffer
-        if (builder.framebuffer!=nullptr) {
+        if (!readFromScreen && builder.framebuffer!=nullptr) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
         return res;
     }
 
-    std::vector<glm::u8vec4> RenderPass::readRawPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+    std::vector<glm::u8vec4> RenderPass::readRawPixels(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool readFromScreen) {
         assert(mIsFinished);
-        if (builder.framebuffer!=nullptr){
+        if (readFromScreen) {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        } else if (builder.framebuffer!=nullptr){
             builder.framebuffer->bind();
         }
         std::vector<glm::u8vec4> bytes(width * height);
@@ -369,7 +373,7 @@ namespace sre {
         glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bytes.data());
 
         // set default framebuffer
-        if (builder.framebuffer!=nullptr) {
+        if (!readFromScreen && builder.framebuffer!=nullptr) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 

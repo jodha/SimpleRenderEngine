@@ -201,7 +201,8 @@ void frameRender() {
 
     if (captureNextFrame) {
         // Capture image of frame for Testing
-        renderer.captureFrameAndFinishRenderPass(&renderPass);
+        renderPass.finish();
+        renderer.captureFrame(&renderPass);
         captureNextFrame = false;
     }
 };
