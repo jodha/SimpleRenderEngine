@@ -18,17 +18,3 @@ file(COPY ../test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #	ENDIF (USE_OPENVR)
 #	file(COPY ${DLLFileList} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #ENDIF(WIN32)
-
-# Add regression tests
-#add_subdirectory(FPS_test)
-#add_test(NAME my_test COMMAND my_test)
-
-#  add_test (mytest ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/FPS-camera/run-test.sh)
-
-find_program (BASH_PROGRAM bash)
-if (BASH_PROGRAM)
-    add_test(NAME  mytest
-             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test/FPS-camera/
-             COMMAND run-test.sh
-             )
-endif (BASH_PROGRAM)
