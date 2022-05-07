@@ -4,7 +4,7 @@
 #       code that only makes sense to one person on earth (this file primarily
 #       documents the commands that need to be run)
 
-../../test/SRE-Test-FPS-camera -p test.ui_events -c
+../../SRE-Test-FPS-camera -p test.ui_events -c
 
 #$acc = 0.0 # threshold before a pixel is different (0 fails if any difference)
 #$pix = 0.0 # percentage of pixels allowed to be different
