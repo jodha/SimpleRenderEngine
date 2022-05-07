@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
     auto SuzanneMaterial = Shader::getStandardPBR()->createMaterial();
     SuzanneMaterial->setColor({1.0f, 0.7f, 0.2f, 1.0f});
     SuzanneMaterial->setMetallicRoughness({0.5f, 0.5f});
-	Suzanne = sre::ModelImporter::importObj("../", "suzanne.obj");
+	Suzanne = sre::ModelImporter::importObj("./", "suzanne.obj");
 	Suzanne->setLocation({20.0f * worldUnit, 0.0f, 0.0f});
 	Suzanne->setRotation({0.0f, -45.0f, 0.0f});
 	Suzanne->setScaling(worldUnit);
@@ -179,7 +179,8 @@ int main(int argc, char *argv[]) {
 void frameUpdate(float deltaTime) {
 	elapsedTime++;
 	glm::vec3 sphereLocation = sphere->getLocation();	
-	sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
+    // Test is too sensitive to elapsed time (changes from platform to platform)
+	//sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
 	sphere->setLocation(sphereLocation);
 };
 
