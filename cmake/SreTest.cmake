@@ -31,8 +31,10 @@ function(add_sre_test test_name tolerance percent_error save_diff_images)
         add_test(NAME regression:${test_name}
                  COMMAND ${test_name} -p test.ui_events -c
                 )
-        add_image_tests(${test_name} ${tolerance} ${percent_error} ${save_diff_images})
+    else ()
+        add_test(NAME interactive:${test_name} COMMAND ${test_name})
     endif()
+    add_image_tests(${test_name} ${tolerance} ${percent_error} ${save_diff_images})
 endfunction()
 
 # Build a test executable
