@@ -1,6 +1,7 @@
 # Add image comparison tests to ${test_name} ====================================
 # This funcion assumes:
 #   - the "gold results" to compare to are located in a directory 'gold_results'
+#   - the "gold results" files have the same names as the test files
 #   - the image comparison software is ${PROJECT_BINARY_DIR}/bin/imgcmp
 #   - PNG images are being compared
 function(add_image_tests test_name tolerance percent_error save_diff_images)
