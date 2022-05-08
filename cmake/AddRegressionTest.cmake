@@ -14,7 +14,7 @@ function(add_image_tests test_name tolerance percent_error save_diff_images)
         else ()
             set(diff_file_string "")
         endif ()
-        add_test(NAME ${test_name}_${case_name}
+        add_test(NAME regression:${test_name}_${case_name}
                  COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${case_file} ${case_file_with_path}
                 )
     endforeach()
@@ -27,7 +27,7 @@ endfunction()
 function(add_sre_test test_name tolerance percent_error save_diff_images)
     set(dir ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY . DESTINATION ${dir})
-    add_test(NAME ${test_name}
+    add_test(NAME regression:${test_name}
              COMMAND ../../SRE-Test-${test_name} -p test.ui_events -c
             )
         add_image_tests(${test_name} ${tolerance} ${percent_error} ${save_diff_images})

@@ -102,7 +102,7 @@ endif(USE_SRE_EXAMPLES)
 
 SET(USE_SRE_TEST_AND_UTILS OFF CACHE BOOL "Enable Tests and Utils for SRE")
 IF (USE_SRE_TEST_AND_UTILS)
-    include(AddSreTest)
+    include(AddRegressionTest)
     add_subdirectory(submodules/googletest)
     add_subdirectory(test)
     add_subdirectory(test_data)
