@@ -10,6 +10,8 @@ FOREACH(scr_file ${scr_files})
 ENDFOREACH()
 
 file(COPY ../examples_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# Uncomment the following to build on Windows outside the MSYS2 environment
+# This creates a list of DLL files and copies them to where the execuables are 
 #IF (WIN32)
 #	SET(SDL2_dll "${CMAKE_BINARY_DIR}/sre_libs/SDL2-2.0.12/lib/x86/SDL2.dll" CACHE STRING "File path to SDL2.dll")
 #	SET(SDL2_image_lib_path "${CMAKE_BINARY_DIR}/sre_libs/SDL2_image-2.0.5/lib/x86" CACHE PATH "Directory path to SDL2_image.dll")

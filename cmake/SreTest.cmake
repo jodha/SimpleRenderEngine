@@ -6,18 +6,18 @@
 #   - PNG images are being compared
 function(add_image_tests test_name tolerance percent_error save_diff_images)
     set(dir ${CMAKE_CURRENT_BINARY_DIR})
-    file(GLOB test_cases "gold_results/*.png")
-    foreach(case_file_with_path ${test_cases})
-        get_filename_component(case_name ${case_file_with_path} NAME_WLE)
-        get_filename_component(case_file ${case_file_with_path} NAME)
+    file(GLOB image_files_list "gold_results/*.png")
+    foreach(image_file_path ${image_files_list})
+        get_filename_component(image_filename ${image_file_path} NAME)
+        get_filename_component(image_name ${image_file_path} NAME_WLE)
         if (save_diff_images)
-            set(diff_file_string "-o" "diff_${case_file}")
+            set(diff_file_string "-o" "diff_${image_filename}")
         else ()
             set(diff_file_string "")
         endif ()
-        add_test(NAME regression:${test_name}_${case_name}
-                 COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${case_file} ${case_file_with_path}
-                )
+        add_test(NAME regression:${test_name}_${image_name}
+                 COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${image_filename} ${image_file_path}
+                 )
     endforeach()
 endfunction()
 
@@ -31,7 +31,7 @@ function(add_sre_test test_name tolerance percent_error save_diff_images)
     if(EXISTS "${dir}/test.ui_events")
         add_test(NAME regression:${test_name}
                  COMMAND ${test_name} -p test.ui_events -c
-                )
+                 )
     else ()
         add_test(NAME interactive:${test_name} COMMAND ${test_name})
     endif()
