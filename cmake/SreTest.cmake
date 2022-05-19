@@ -1,22 +1,27 @@
 # Add image comparison tests to ${test_name} ====================================
 # This funcion assumes:
-#   - the "gold results" to compare to are located in a directory 'gold_results'
+#   - the "gold results" to compare to are located in directory 'gold_results'
 #   - the "gold results" files have the same names as the test files
 #   - the image comparison software is ${PROJECT_BINARY_DIR}/bin/imgcmp
 #   - PNG images are being compared
 function(add_image_tests test_name tolerance percent_error save_diff_images)
+    set(gold_results_dir_name "gold_results") 
     set(dir ${CMAKE_CURRENT_BINARY_DIR})
-    file(GLOB image_files_list "gold_results/*.png")
+    file(GLOB image_files_list "${gold_results_dir_name}/*.png")
     foreach(image_file_path ${image_files_list})
         get_filename_component(image_filename ${image_file_path} NAME)
         get_filename_component(image_name ${image_file_path} NAME_WLE)
+        set(sub_test_name ${test_name}_${image_name})
         if (save_diff_images)
             set(diff_file_string "-o" "diff_${image_filename}")
         else ()
             set(diff_file_string "")
         endif ()
-        add_test(NAME regression:${test_name}_${image_name}
-                 COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${image_filename} ${image_file_path}
+        add_test(NAME regression:${sub_test_name}
+                 COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${image_filename} ${dir}/${gold_results_dir_name}/${image_filename}
+                 )
+        set_tests_properties(regression:${sub_test_name}
+                 PROPERTIES FIXTURES_REQUIRED ${test_name}
                  )
     endforeach()
 endfunction()
@@ -31,6 +36,9 @@ function(add_sre_test test_name tolerance percent_error save_diff_images)
     if(EXISTS "${dir}/test.ui_events")
         add_test(NAME regression:${test_name}
                  COMMAND ${test_name} -p test.ui_events -c
+                 )
+        set_tests_properties(regression:${test_name}
+                 PROPERTIES FIXTURES_SETUP ${test_name}
                  )
     else ()
         add_test(NAME interactive:${test_name} COMMAND ${test_name})

@@ -49,7 +49,13 @@ public:
         InitBuilder& withVSync(bool vsync);
         InitBuilder& withGLVersion(int majorVersion, int minorVersion);
         InitBuilder& withMaxSceneLights(int maxSceneLights);            // Set max amount of concurrent lights
-        InitBuilder& withMinimalRendering(bool minimalRendering);       // Minimize rendering for graphics that are mostly static (e.g. drawings)
+        InitBuilder& withMinimalRendering(bool minimalRendering);       // Minimize rendering for graphics based on the interaction of the user (stop
+                                                                        // rendering when the user stops interacting). This conserves considerable power,
+                                                                        // which is especially important for laptop battery life.
+                                                                        // If you are using this option with ImGui, it is highly recommended to turn off the
+                                                                        // blinking cursor. If this is not done, the cursor will stop blinking whenever
+                                                                        // rendering is paused, leading to a "flaky" experience for the user. Use the statement
+                                                                        // ImGui::GetIO().ConfigInputTextCursorBlink = false;
         void build();
     private:
         explicit InitBuilder(SDLRenderer* sdlRenderer);
@@ -166,6 +172,9 @@ public:
                       bool captureFromScreen= false);           // attached to RenderPass, then set captureFromScreen = true. Finish RenderPass before calling.
     void writeCapturedImages(std::string fileName);             // Write all the images stored in memory to files
 
+    // Mouse and keyboard interface
+    Uint32 getMouseState(int* x = nullptr, int* y = nullptr);   // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of recorded events
+    SDL_Keymod getKeymodState();                                // Intercept calls to SDL_GetModState for Dear ImGui during playback of recorded events
     bool isKeyPressed(SDL_Keycode keyCode);                     // Return true if a specific key is pressed 
     bool isAnyKeyPressed();                                     // Return true if any key is pressed
 
@@ -234,9 +243,6 @@ private:
     std::vector<std::vector<glm::u8vec4>> m_image;
     std::vector<glm::ivec2> m_imageDimensions;
 
-    // Mouse and keyboard interface
-    Uint32 getMouseState(int* x, int* y);                       // Intercept calls to SDL_GetMouseState for Dear ImGui during playback of recorded events
-    SDL_Keymod getKeymodState();                                // Intercept calls to SDL_GetModState for Dear ImGui during playback of recorded events
     friend bool ImGui_SRE_ProcessEvent(SDL_Event *event);       // This ImGui SRE interface function calls getKeymodState
     friend void ImGui_SRE_NewFrame(SDL_Window *window);         // This ImGui SRE interface function calls getMouseState
     std::vector<SDL_Keycode> keyPressed;
