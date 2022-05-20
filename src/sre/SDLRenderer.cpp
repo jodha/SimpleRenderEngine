@@ -1279,8 +1279,10 @@ namespace sre{
     Uint32 SDLRenderer::getMouseState(int* x, int* y) {
         Uint32 mouseState;
         if (m_playingBackEvents) {
-            *x = m_playbackMouse_x;
-            *y = m_playbackMouse_y;
+            if (x != nullptr && y != nullptr) {
+                *x = m_playbackMouse_x;
+                *y = m_playbackMouse_y;
+            }
             mouseState = m_playbackMouseState;
         } else {
             mouseState = SDL_GetMouseState(x, y);
