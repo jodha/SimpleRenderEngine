@@ -57,17 +57,15 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-	// Initialize Graphics renderer (needs to be done before graphics used)
+	// Initialize renderer (must be done before event recorder or graphics used)
     renderer.init().withSdlWindowFlags(sdlWindowFlags);
     
-    // Initialize event recording and playing for Testing
+    // Setup and start event recording and playing for Testing
     std::string errorMessage;
-    if (!renderer.initializeEventRecorder(recordingEvents, playingEvents,
-                                          eventsFileName, errorMessage)) {
+    if (!renderer.startEventRecorder(recordingEvents, playingEvents,
+                                     eventsFileName, errorMessage)) {
         LOG_ERROR(errorMessage.c_str());
-        if (sdlWindowFlags & SDL_WINDOW_HIDDEN) {
-            exit(EXIT_FAILURE);
-        }
+        exit(EXIT_FAILURE);
     }
     
 	// Assign SDLRenderer 'callback' functions to functions implemented below
@@ -167,7 +165,7 @@ int main(int argc, char *argv[]) {
     renderer.startEventLoop();
 
     // Write captured images for Testing
-    renderer.writeCapturedImages("Test");
+    renderer.writeCapturedImages("capture");
 
 	// Exit the program
     return 0;
@@ -177,11 +175,11 @@ int main(int argc, char *argv[]) {
 
 // Update the rendering frame (move the sphere)
 void frameUpdate(float deltaTime) {
-	elapsedTime++;
-	glm::vec3 sphereLocation = sphere->getLocation();	
     // Test is too sensitive to elapsed time (changes from platform to platform)
+	//elapsedTime++;
+	//glm::vec3 sphereLocation = sphere->getLocation();	
 	//sphereLocation.z += cos(elapsedTime/50.0f)/7.0f;
-	sphere->setLocation(sphereLocation);
+	//sphere->setLocation(sphereLocation);
 };
 
 // Render (draw) the updated frame

@@ -383,17 +383,17 @@ namespace sre{
     }
 
     void SDLRenderer::drawFrame() {
-        // The following two lines should be removed if possible (the drawFrame
-        // function should only render the frame and swap). Processing the
+        // The processEvents call should be removed if possible. Processing the
         // events is currently necessary because the "up" stroke of the "Enter"
         // key needs to be captured after the user has initiated a long
-        // calculation from ImGUI::InputText (if this is not done, the
+        // calculation from ImGui::InputText (if this is not done, the
         // ImGui::InputText function will continue to think that the Enter key
         // is still down and continue to return true, causing a large number
         // of "Enter" strokes to get registered in the command log)).
-        int numEvents;
         processEvents();
+        frameUpdate(0);
         frameRender();
+        frameNumber++;
         r->swapWindow();
     }
 
@@ -625,50 +625,72 @@ namespace sre{
         return success = true;
     }
 
-    bool SDLRenderer::initializeEventRecorder(
-                                     bool& recordingEvents, bool& playingEvents,
-                                     const std::string& eventsFileName,
-                                     std::string& errorMessage) {
-        bool success;
+    bool SDLRenderer::setupEventRecorder(bool& recordingEvents,
+                                         bool& playingEvents,
+                                         const std::string& eventsFileName,
+                                         std::string& errorMessage) {
+        bool success = true;
         assert(!(recordingEvents && playingEvents));
         assert(!(m_recordingEvents && m_playingBackEvents));
         if (playingEvents && !m_playingBackEvents) {
-            if (!startPlayingEvents(eventsFileName, errorMessage)) {
+            if (m_recordingEvents) {
+                errorMessage = "Attempted to play events while recording";
+                playingEvents = false;
+                return success = false;
+            }
+            if (!readRecordedEvents(eventsFileName, errorMessage)) {
+                playingEvents = false;
                 return success = false;
             }
         } else if (recordingEvents && !m_recordingEvents) {
-            if(!startRecordingEvents(eventsFileName, errorMessage)) {
+            if (m_recordingEvents) {
+                errorMessage = "Attempted to record events while already recording";
+                recordingEvents = false;
                 return success = false;
             }
+            if (m_playingBackEvents) {
+                errorMessage = "Attempted to record events while playing";
+                recordingEvents = false;
+                return success = false;
+            }
+            m_recordingFileName = eventsFileName;
+            // Test whether file can be opened for writing
+            std::ofstream outFile(m_recordingFileName, std::ios::out);
+            if(!outFile) {
+                std::stringstream errorStream;
+                errorStream << "File '" << m_recordingFileName
+                    << "' could not be opened for writing." << std::endl;
+                errorMessage = errorStream.str();
+                recordingEvents = false;
+                success = false;
+            } else {
+                outFile.close();
+            }
+            std::stringstream().swap(m_recordingStream);
         }
-        // Update calling function event processing status
-        recordingEvents = m_recordingEvents;
-        playingEvents = m_playingBackEvents;
-        return success = true;
+        return success;
     }
 
-    bool SDLRenderer::startRecordingEvents(const std::string& fileName,
-                                           std::string& errorMessage) {
-        if (m_recordingEvents) {
-            errorMessage = "Attempted to record events while already recording";
-            return false;
-        }
+    bool SDLRenderer::startEventRecorder(bool& recordingEvents,
+                                         bool& playingEvents,
+                                         const std::string& eventsFileName,
+                                         std::string& errorMessage) {
         bool success = true;
-        m_recordingEvents = true;
-        m_recordingFileName = fileName;
-        // Test whether file can be opened for writing
-        std::ofstream outFile(m_recordingFileName, std::ios::out);
-        if(!outFile) {
-            std::stringstream errorStream;
-            errorStream << "File '" << m_recordingFileName
-                << "' could not be opened for writing." << std::endl;
-            errorMessage = errorStream.str();
-            success = false;
+        if (setupEventRecorder(recordingEvents, playingEvents, eventsFileName,
+                               errorMessage)) {
+            if (recordingEvents) {
+                startRecordingEvents();
+            } else if (playingEvents) {
+                startPlayingEvents();
+            }
         } else {
-            outFile.close();
+            success = false;
         }
-        std::stringstream().swap(m_recordingStream);
         return success;
+    }
+
+    void SDLRenderer::startRecordingEvents() {
+        m_recordingEvents = true;
     }
 
     void SDLRenderer::recordFrame() {
@@ -1086,19 +1108,8 @@ namespace sre{
         return m_recordingEvents;
     }
 
-    bool SDLRenderer::startPlayingEvents(const std::string& fileName,
-                                         std::string& errorMessage) {
-        // Read recorded events and write out events from playback
-        bool success = true;
-        if (m_recordingEvents) {
-            errorMessage = "Attempted to play events while recording events";
-            return success = false;
-        }
-        if (!readRecordedEvents(fileName, errorMessage)) {
-            return success = false;
-        }
+    void SDLRenderer::startPlayingEvents() {
         m_playingBackEvents = true;
-        return success;
     }
 
     bool SDLRenderer::readRecordedEvents(const std::string& fileName,
@@ -1108,6 +1119,7 @@ namespace sre{
             errorMessage = "Cannot read a recording while recording events";
             return success = false;
         }
+
         std::ifstream inFile(fileName, std::ios::in);
         if(inFile) {
             // Read Imgui character stream size
@@ -1122,11 +1134,12 @@ namespace sre{
                     commentedLine = false;
                 }
             }
+
             std::istringstream fileLine(fileLineString);
             if (!inFile || !fileLine) {
                 if (inFile.eof()) {
                     endOfFile = true;
-                    errorMessage = "Events file does not contain any events";
+                    errorMessage = "Events file is empty";
                 } else {
                     errorMessage = "Error reading first line from events file";
                 }
@@ -1152,9 +1165,12 @@ namespace sre{
                     errorMessage = "Error reading imgui.ini file from events file";
                     return success = false;
                 }
-            }
+            } 
+            // The c_str from std::stringstream deallocates after statement
+            // So, store in a const temporary that will exist while in scope
+            const std::string& imGuiString = imGuiStream.str();
             // Load the imgui.ini character stream into ImGui
-            ImGui::LoadIniSettingsFromMemory(imGuiStream.str().c_str(), imGuiSize);
+            ImGui::LoadIniSettingsFromMemory(imGuiString.c_str(), imGuiSize);
 
             // Should make a `nextCharPeek()` function to return next char
             // but put it back. If it is a comment, then read the line and
@@ -1171,8 +1187,8 @@ namespace sre{
             inFile.close();
         } else {
             std::stringstream errorStream;
-            errorStream << "File '" << fileName
-                << "' could not be opened." << std::endl;
+            errorStream << "File '" << fileName << "' could not be opened."
+                        << std::endl;
             errorMessage = errorStream.str();
             success = false;
         }
@@ -1247,6 +1263,10 @@ namespace sre{
                                        m_imageDimensions[i].y, captureFromScreen));
     }
 
+    int SDLRenderer::numCapturedImages() {
+        return m_image.size();
+    }
+
     void SDLRenderer::writeCapturedImages(std::string fileName) {
         if (m_writingImages) {
             return;
@@ -1263,7 +1283,7 @@ namespace sre{
             SDLRenderer::instance->drawFrame();
 
             std::stringstream imageFileName;
-            imageFileName << fileName << i << ".png";
+            imageFileName << fileName << i+1 << ".png"; // Start numbering at 1
 
             int stride = Color::numChannels() * m_imageDimensions[i].x;
             stbi_write_png(imageFileName.str().c_str(),
