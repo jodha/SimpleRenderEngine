@@ -49,7 +49,7 @@ void mouseEvent(SDL_Event& event);
 int main(int argc, char *argv[]) {
 
     // Set up event recording and playing for Testing
-    uint32_t sdlWindowFlags = SDL_WINDOW_OPENGL;
+    uint32_t sdlWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI  | SDL_WINDOW_OPENGL;
     if (!renderer.parseMainArgumentsForEventProcessing(
                                "SRE-Test-FPS-camera", argc, argv,
                                recordingEvents, playingEvents,

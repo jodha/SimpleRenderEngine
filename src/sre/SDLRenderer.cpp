@@ -554,7 +554,7 @@ namespace sre{
         //   option and missing argument cases
     
         int option;
-        bool isHidden;
+        bool isHidden = false;
         while(argc != 1 && (option = getopt(argc, argv, ":hr:p:c")) != -1) {
             switch(option) {
             case 'r':
@@ -593,11 +593,12 @@ namespace sre{
                 printf("usage: %s [ -r filename <or> -p filename ][-c]\n",
                        programName.c_str());
                 printf("where\n");
-                printf("    r: (-r filename) record events to filename\n");
+                printf("    r: [-r filename] record events to filename\n");
                 printf("or\n");
-                printf("    p: (-p filename) playback events from filename\n");
-                printf("-c indicates run in console with hidden window,");
-                printf("which can only be used together with the -p option.");
+                printf("    p: [-p filename] playback events from filename\n");
+                printf("and\n");
+                printf("    c: [-c] hide program while running, which can only be used together with\n");
+                printf("            the -p option. The default is a visible, resizable window.\n");
                 return success = false;
             case ':':
                 // missing option argument
