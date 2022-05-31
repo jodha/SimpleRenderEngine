@@ -21,8 +21,8 @@ function(add_image_tests test_name tolerance percent_error save_diff_images)
                  COMMAND ${PROJECT_BINARY_DIR}/bin/imgcmp -v ${diff_file_string} -t ${tolerance} -e ${percent_error}% ${dir}/${image_filename} ${dir}/${gold_results_dir_name}/${image_filename}
                  )
         set_tests_properties(regression:${sub_test_name}
-                 PROPERTIES FIXTURES_REQUIRED ${test_name}
-                 )
+                             PROPERTIES FIXTURES_REQUIRED ${test_name}
+                             )
     endforeach()
 endfunction()
 
@@ -33,16 +33,16 @@ endfunction()
 function(add_sre_test test_name width height tolerance percent_error save_diff_images)
     set(dir ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY . DESTINATION ${dir} PATTERN "${test_name}.cpp" EXCLUDE)
-    if(EXISTS "${dir}/test.ui_events")
+    if (EXISTS "${dir}/test.ui_events")
         add_test(NAME regression:${test_name}
                  COMMAND ${test_name} -p test.ui_events -c -x ${width} -y ${height}
                  )
         set_tests_properties(regression:${test_name}
-                 PROPERTIES FIXTURES_SETUP ${test_name}
-                 )
+                             PROPERTIES FIXTURES_SETUP ${test_name}
+                             )
     else ()
         add_test(NAME interactive:${test_name} COMMAND ${test_name} -x ${width} -y ${height})
-    endif()
+    endif ()
     add_image_tests(${test_name} ${tolerance} ${percent_error} ${save_diff_images})
 endfunction()
 
@@ -61,6 +61,6 @@ function(add_all_subdirectories)
         if (IS_DIRECTORY ${item_path})
             get_filename_component(item_name ${item_path} NAME)
             add_subdirectory(${item_name})
-        endif()
+        endif ()
     endforeach()
 endfunction()
