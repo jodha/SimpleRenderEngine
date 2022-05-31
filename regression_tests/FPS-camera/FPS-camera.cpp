@@ -49,16 +49,18 @@ void mouseEvent(SDL_Event& event);
 int main(int argc, char *argv[]) {
 
     // Set up event recording and playing for Testing
+    glm::ivec2 appWindowSize = {800, 600};
     uint32_t sdlWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI  | SDL_WINDOW_OPENGL;
     if (!renderer.parseMainArgumentsForEventProcessing(
                                "SRE-Test-FPS-camera", argc, argv,
-                               recordingEvents, playingEvents,
-                               eventsFileName, sdlWindowFlags)) {
+                               recordingEvents, playingEvents, eventsFileName,
+                               sdlWindowFlags, appWindowSize)) {
         exit(EXIT_FAILURE);
     }
 
 	// Initialize renderer (must be done before event recorder or graphics used)
     renderer.init().withSdlWindowFlags(sdlWindowFlags);
+    renderer.setWindowSize(appWindowSize);
     
     // Setup and start event recording and playing for Testing
     std::string errorMessage;

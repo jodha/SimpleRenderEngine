@@ -30,18 +30,18 @@ endfunction()
 # This funcion assumes:
 #   - the user interface events file is called 'test.ui_events'
 #   - the test's executable name is ${test_name}
-function(add_sre_test test_name tolerance percent_error save_diff_images)
+function(add_sre_test test_name width height tolerance percent_error save_diff_images)
     set(dir ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY . DESTINATION ${dir} PATTERN "${test_name}.cpp" EXCLUDE)
     if(EXISTS "${dir}/test.ui_events")
         add_test(NAME regression:${test_name}
-                 COMMAND ${test_name} -p test.ui_events -c
+                 COMMAND ${test_name} -p test.ui_events -c -x ${width} -y ${height}
                  )
         set_tests_properties(regression:${test_name}
                  PROPERTIES FIXTURES_SETUP ${test_name}
                  )
     else ()
-        add_test(NAME interactive:${test_name} COMMAND ${test_name})
+        add_test(NAME interactive:${test_name} COMMAND ${test_name} -x ${width} -y ${height})
     endif()
     add_image_tests(${test_name} ${tolerance} ${percent_error} ${save_diff_images})
 endfunction()

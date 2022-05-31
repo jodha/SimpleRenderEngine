@@ -2,6 +2,9 @@
 
 add_all_subdirectories()
 
+# Comment line above and Uncomment line below to add only selected subdirectories
+#add_subdirectory(FPS-camera)
+
 # Uncomment the following to build on Windows outside the MSYS2 environment
 # This creates a list of DLL files and copies them to where the execuables are
 #IF (WIN32)

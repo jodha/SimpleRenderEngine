@@ -543,7 +543,8 @@ namespace sre{
                           int argc, char* argv[],
                           bool& recordEvents, bool& playEvents,
                           std::string& eventsFileName,
-                          uint32_t& sdlWindowFlags) {
+                          uint32_t& sdlWindowFlags,
+                          glm::ivec2& appWindowSize) {           
         int success = true;
 
         // Get and process arguments passed in to the executable
@@ -555,7 +556,7 @@ namespace sre{
     
         int option;
         bool isHidden = false;
-        while(argc != 1 && (option = getopt(argc, argv, ":hr:p:c")) != -1) {
+        while(argc != 1 && (option = getopt(argc, argv, ":hr:p:x:y:c")) != -1) {
             switch(option) {
             case 'r':
                 if (!playEvents) {
@@ -589,16 +590,35 @@ namespace sre{
                     return success = false;
                 }
                 break;
+            case 'x':
+                appWindowSize.x = atoi(optarg);
+                if (appWindowSize.x < 0) {
+                    std::cout << "Error: cannot specify a negative value for x"
+                              << std::endl;
+                    return success = false;
+                }
+                break;
+            case 'y':
+                appWindowSize.y = atoi(optarg);
+                if (appWindowSize.y < 0) {
+                    std::cout << "Error: cannot specify a negative value for y"
+                              << std::endl;
+                    return success = false;
+                }
+                break;
             case 'h':   // help
-                printf("usage: %s [ -r filename <or> -p filename ][-c]\n",
+                printf("usage: %s [ -r filename <or> -p filename ][-c][-x pixels][-y pixels]\n",
                        programName.c_str());
                 printf("where\n");
-                printf("    r: [-r filename] record events to filename\n");
+                printf("    [-r filename] record events to filename\n");
                 printf("or\n");
-                printf("    p: [-p filename] playback events from filename\n");
+                printf("    [-p filename] playback events from filename\n");
                 printf("and\n");
-                printf("    c: [-c] hide program while running, which can only be used together with\n");
-                printf("            the -p option. The default is a visible, resizable window.\n");
+                printf("    [-c] hide application while running, which can only be used together with\n");
+                printf("         the -p option. The default is a visible, resizable window.\n");
+                printf("and\n");
+                printf("    [-x pixels_in_x_direction] set application window width in pixels\n");
+                printf("    [-y pixels_in_y_direction] set application window height in pixels\n");
                 return success = false;
             case ':':
                 // missing option argument
@@ -606,13 +626,13 @@ namespace sre{
                 // argv[0] is the name of the program
                 fprintf(stderr, "%s: option '-%c' requires an argument\n",
                         argv[0],   optopt);
-                printf("usage: %s [ -r filename <or> -p filename ]\n",
+                printf("usage: %s [ -r filename <or> -p filename ][-c][-x pixels][-y pixels]\n",
                        programName.c_str());
                 return success = false;
             case '?':   // getopt default invalid option
             default:
                 fprintf(stderr, "Illegal option '-%c\n", optopt);
-                printf("usage: %s [ -r filename <or> -p filename ][-c]\n",
+                printf("usage: %s [ -r filename <or> -p filename ][-c][-x pixels][-y pixels]\n",
                        programName.c_str());
                 return success = false;
             }
