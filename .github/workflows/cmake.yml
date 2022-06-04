@@ -113,7 +113,13 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Get OpenGL
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: openrndr/setup-opengl@v1.1
+
+    - name: OpenGl stuff
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: xvfb-run glxinfo
 
     - name: Checkout submodules
